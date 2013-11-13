@@ -80,8 +80,12 @@ HwComposerBackend::create()
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_0:
         case HWC_DEVICE_API_VERSION_1_1:
+#ifdef HWC_DEVICE_API_VERSION_1_2
         case HWC_DEVICE_API_VERSION_1_2:
+#endif /* HWC_DEVICE_API_VERSION_1_2 */
+#ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
+#endif /* HWC_DEVICE_API_VERSION_1_3 */
             return new HwComposerBackend_v1(hwc_module);
             break;
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
