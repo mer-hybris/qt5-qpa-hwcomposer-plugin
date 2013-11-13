@@ -1,0 +1,18 @@
+Qt 5 QPA hwcomposer plugin
+==========================
+
+This QPA plugin allows rendering on top of libhybris-based hwcomposer EGL
+platforms. The hwcomposer API is specific to a given Droid release, and
+sometimes also SoC type (generic, qcom, exynos4, ...).
+
+This plugin is derived from the "eglfs" plugin, but removes some parts of
+it that would make it harder to integrate hwcomposer features into the QPA.
+
+
+Build requirements
+------------------
+
+  - Qt 5 devel packages
+  - libhybris devel packages
+  - Droid headers
+
