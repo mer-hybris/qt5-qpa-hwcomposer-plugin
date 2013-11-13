@@ -10,11 +10,13 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5PlatformSupport)
 BuildRequires:  pkgconfig(egl)
-BuildRequires:  pkgconfig(glesv2)
-BuildRequires:  pkgconfig(wayland-egl)
+BuildRequires:  libhybris-cm-10.2-libGLESv2
+BuildRequires:  libhybris-cm-10.2-libGLESv2-devel
+BuildRequires:  libhybris-cm-10.2-libwayland-egl
+BuildRequires:  libhybris-cm-10.2-libwayland-egl-devel
 BuildRequires:  pkgconfig(libhardware)
 # Comment out the libsync dependency for old hw adaptations
-#BuildRequires:  pkgconfig(libsync)
+BuildRequires:  pkgconfig(libsync)
 BuildRequires:  pkgconfig(hybris-egl-platform)
 BuildRequires:  pkgconfig(android-headers)
 BuildRequires:  qt5-qtwayland-wayland_egl-devel
