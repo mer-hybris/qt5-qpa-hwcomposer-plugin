@@ -66,20 +66,30 @@ HwComposerBackend *
 HwComposerBackend::create()
 {
     hw_module_t *hwc_module = NULL;
+    hw_device_t *hwc_device = NULL;
 
     // Open hardware composer
     HWC_PLUGIN_ASSERT_ZERO(hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)));
 
-    fprintf(stderr, "== hwcomposer ==\n");
+    fprintf(stderr, "== hwcomposer module ==\n");
+    fprintf(stderr, " * Address: %p\n", hwc_module);
     fprintf(stderr, " * Module API Version: %x\n", hwc_module->module_api_version);
     fprintf(stderr, " * HAL API Version: %x\n", hwc_module->hal_api_version); /* should be zero */
     fprintf(stderr, " * Identifier: %s\n", hwc_module->id);
     fprintf(stderr, " * Name: %s\n", hwc_module->name);
     fprintf(stderr, " * Author: %s\n", hwc_module->author);
-    fprintf(stderr, "== hwcomposer ==\n");
+    fprintf(stderr, "== hwcomposer module ==\n");
+
+    // Open hardware composer device
+    HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
+
+    fprintf(stderr, "== hwcomposer device ==\n");
+    fprintf(stderr, " * Version: %x\n", hwc_device->version);
+    fprintf(stderr, " * Module: %p\n", hwc_device->module);
+    fprintf(stderr, "== hwcomposer device ==\n");
 
     // Determine which backend we use based on the supported module API version
-    switch (hwc_module->module_api_version) {
+    switch (hwc_device->version) {
         /**
          * Some headers actually have HWC_DEVICE_API_VERSION_0_1 defined to
          * 0x01, so we need to add this #if check here to avoid getting a
@@ -91,7 +101,7 @@ HwComposerBackend::create()
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
-            return new HwComposerBackend_v0(hwc_module);
+            return new HwComposerBackend_v0(hwc_module, hwc_device);
             break;
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_0:
@@ -102,7 +112,7 @@ HwComposerBackend::create()
 #ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
 #endif /* HWC_DEVICE_API_VERSION_1_3 */
-            return new HwComposerBackend_v1(hwc_module);
+            return new HwComposerBackend_v1(hwc_module, hwc_device);
             break;
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:

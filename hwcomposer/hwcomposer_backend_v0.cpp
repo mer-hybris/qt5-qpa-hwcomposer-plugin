@@ -42,13 +42,11 @@
 #include "hwcomposer_backend_v0.h"
 
 
-HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module)
+HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
-    , hwc_device(NULL)
+    , hwc_device((hwc_composer_device_t *)hw_device)
     , hwc_layer_list(NULL)
 {
-    HWC_PLUGIN_ASSERT_ZERO(hwc_open(hwc_module, &hwc_device));
-
     // Allocate hardware composer layer list
     hwc_layer_list = new hwc_layer_list_t();
     hwc_layer_list->flags = HWC_GEOMETRY_CHANGED;
