@@ -43,9 +43,9 @@
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
-HwComposerBackend_v1::HwComposerBackend_v1(hw_module_t *hwc_module)
+HwComposerBackend_v1::HwComposerBackend_v1(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
-    , hwc_device(NULL)
+    , hwc_device((hwc_composer_device_1_t *)hw_device)
     , hwc_win(NULL)
     , hwc_list(NULL)
     , hwc_mList(NULL)
@@ -53,7 +53,6 @@ HwComposerBackend_v1::HwComposerBackend_v1(hw_module_t *hwc_module)
     , oldrelease(-1)
     , oldrelease2(-1)
 {
-    HWC_PLUGIN_ASSERT_ZERO(hwc_open_1(hwc_module, &hwc_device));
     HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
 }
 

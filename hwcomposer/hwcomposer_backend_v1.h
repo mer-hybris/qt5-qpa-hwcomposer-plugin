@@ -51,7 +51,7 @@
 
 class HwComposerBackend_v1 : public HwComposerBackend {
 public:
-    HwComposerBackend_v1(hw_module_t *hwc_module);
+    HwComposerBackend_v1(hw_module_t *hwc_module, hw_device_t *hw_device);
     virtual ~HwComposerBackend_v1();
 
     virtual EGLNativeDisplayType display();
