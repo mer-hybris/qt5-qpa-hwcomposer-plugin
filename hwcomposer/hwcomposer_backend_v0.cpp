@@ -44,7 +44,7 @@
 
 HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
-    , hwc_device((hw_composer_device_t *)hw_device)
+    , hwc_device((hwc_composer_device_t *)hw_device)
     , hwc_layer_list(NULL)
 {
     // Allocate hardware composer layer list
