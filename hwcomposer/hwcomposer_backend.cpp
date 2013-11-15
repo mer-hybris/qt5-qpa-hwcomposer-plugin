@@ -44,6 +44,14 @@
 #include "hwcomposer_backend_v1.h"
 
 
+/**
+ * In recent versions of the Droid headers (e.g. CM10.2-based), the #define for
+ * HWC_DEVICE_API_VERSION_0_1 is overwritten in the hwcomposer_defs.h file, so
+ * we re-define it again here to be able to match against 0x1 API modules.
+ **/
+#define HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY HARDWARE_MODULE_API_VERSION(0, 1)
+
+
 HwComposerBackend::HwComposerBackend(hw_module_t *hwc_module)
     : hwc_module(hwc_module)
 {
@@ -72,6 +80,14 @@ HwComposerBackend::create()
 
     // Determine which backend we use based on the supported module API version
     switch (hwc_module->module_api_version) {
+        /**
+         * Some headers actually have HWC_DEVICE_API_VERSION_0_1 defined to
+         * 0x01, so we need to add this #if check here to avoid getting a
+         * "duplicate case value" compiler error (if both are the same).
+         **/
+#if HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY != HWC_DEVICE_API_VERSION_0_1
+        case HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY:
+#endif /* HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY != HWC_DEVICE_API_VERSION_0_1 */
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
