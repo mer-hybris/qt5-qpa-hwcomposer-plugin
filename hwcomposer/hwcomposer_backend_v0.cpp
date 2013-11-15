@@ -50,16 +50,16 @@ HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module)
     HWC_PLUGIN_ASSERT_ZERO(hwc_open(hwc_module, &hwc_device));
 
     // Allocate hardware composer layer list
-    hwc_layer_list = new hwc_layer_list_t();
-    hwc_layer_list->flags = HWC_GEOMETRY_CHANGED;
-    hwc_layer_list->numHwLayers = 0;
+    //hwc_layer_list = calloc(1, sizeof(hwc_layer_list_t) + sizeof(hwc_layer_t));
+    //hwc_layer_list->flags = HWC_GEOMETRY_CHANGED;
+    //hwc_layer_list->numHwLayers = 0;
 }
 
 HwComposerBackend_v0::~HwComposerBackend_v0()
 {
-    if (hwc_layer_list != NULL) {
-        delete hwc_layer_list;
-    }
+    //if (hwc_layer_list != NULL) {
+    //    free(hwc_layer_list);
+    //}
 
     // Close the hwcomposer handle
     HWC_PLUGIN_EXPECT_ZERO(hwc_close(hwc_device));
@@ -91,8 +91,8 @@ HwComposerBackend_v0::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
     // TODO: Wait for vsync
 
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->prepare(hwc_device, hwc_layer_list));
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->set(hwc_device, display, surface, hwc_layer_list));
+    HWC_PLUGIN_EXPECT_ZERO(hwc_device->prepare(hwc_device, NULL));
+    HWC_PLUGIN_EXPECT_ZERO(hwc_device->set(hwc_device, display, surface, NULL));
 }
 
 void
@@ -101,7 +101,7 @@ HwComposerBackend_v0::sleepDisplay(bool sleep)
     if (sleep) {
         HWC_PLUGIN_EXPECT_ZERO(hwc_device->set(hwc_device, NULL, NULL, NULL));
     } else {
-        hwc_layer_list->flags = HWC_GEOMETRY_CHANGED;
+        //hwc_layer_list->flags = HWC_GEOMETRY_CHANGED;
     }
 }
 
