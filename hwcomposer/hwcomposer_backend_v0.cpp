@@ -92,7 +92,21 @@ HwComposerBackend_v0::swap(EGLNativeDisplayType display, EGLSurface surface)
     // TODO: Wait for vsync
 
     HWC_PLUGIN_EXPECT_ZERO(hwc_device->prepare(hwc_device, NULL));
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->set(hwc_device, display, surface, NULL));
+    int res = hwc_device->set(hwc_device, display, surface, NULL);
+    switch (res) {
+        case 0:
+            /* success */
+            break;
+        case HWC_EGL_ERROR:
+            fprintf(stderr, "Error in hwc_device->set(%x, %x, %x, NULL): eglGetError() = 0x%x",
+                    int(display), int(surface), eglGetError());
+            break;
+        default:
+            fprintf(stderr, "Error in hwc_device->set(%x, %x, %x, NULL): %d",
+                    int(display), int(surface), res);
+            /* other error */
+            break;
+    }
 }
 
 void
