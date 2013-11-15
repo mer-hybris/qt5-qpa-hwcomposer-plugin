@@ -50,7 +50,7 @@ HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module)
     HWC_PLUGIN_ASSERT_ZERO(hwc_open(hwc_module, &hwc_device));
 
     // Allocate hardware composer layer list
-    hwc_layer_list = calloc(1, sizeof(hwc_layer_list_t) + sizeof(hwc_layer_t));
+    hwc_layer_list = (hwc_layer_list_t *)calloc(1, sizeof(hwc_layer_list_t) + sizeof(hwc_layer_t));
     hwc_layer_list->flags = HWC_GEOMETRY_CHANGED;
     hwc_layer_list->numHwLayers = 0;
 }
