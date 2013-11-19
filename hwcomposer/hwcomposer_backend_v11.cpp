@@ -39,11 +39,11 @@
 **
 ****************************************************************************/
 
-#include "hwcomposer_backend_v1.h"
+#include "hwcomposer_backend_v11.h"
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
-HwComposerBackend_v1::HwComposerBackend_v1(hw_module_t *hwc_module, hw_device_t *hw_device)
+HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
     , hwc_win(NULL)
@@ -56,7 +56,7 @@ HwComposerBackend_v1::HwComposerBackend_v1(hw_module_t *hwc_module, hw_device_t 
     HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
 }
 
-HwComposerBackend_v1::~HwComposerBackend_v1()
+HwComposerBackend_v11::~HwComposerBackend_v11()
 {
     // Destroy the window if it hasn't yet been destroyed
     if (hwc_win != NULL) {
@@ -76,13 +76,13 @@ HwComposerBackend_v1::~HwComposerBackend_v1()
 }
 
 EGLNativeDisplayType
-HwComposerBackend_v1::display()
+HwComposerBackend_v11::display()
 {
     return EGL_DEFAULT_DISPLAY;
 }
 
 EGLNativeWindowType
-HwComposerBackend_v1::createWindow(int width, int height)
+HwComposerBackend_v11::createWindow(int width, int height)
 {
     // We expect that we haven't created a window already, if we had, we
     // would leak stuff, and we want to avoid that for obvious reasons.
@@ -141,7 +141,7 @@ HwComposerBackend_v1::createWindow(int width, int height)
 }
 
 void
-HwComposerBackend_v1::destroyWindow(EGLNativeWindowType window)
+HwComposerBackend_v11::destroyWindow(EGLNativeWindowType window)
 {
     Q_UNUSED(window);
 
@@ -149,7 +149,7 @@ HwComposerBackend_v1::destroyWindow(EGLNativeWindowType window)
 }
 
 void
-HwComposerBackend_v1::swap(EGLNativeDisplayType display, EGLSurface surface)
+HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
     // TODO: Wait for vsync?
 
@@ -188,13 +188,13 @@ HwComposerBackend_v1::swap(EGLNativeDisplayType display, EGLSurface surface)
 }
 
 void
-HwComposerBackend_v1::sleepDisplay(bool sleep)
+HwComposerBackend_v11::sleepDisplay(bool sleep)
 {
     // TODO
 }
 
 float
-HwComposerBackend_v1::refreshRate()
+HwComposerBackend_v11::refreshRate()
 {
     // TODO: Implement new hwc 1.1 querying of vsync period per-display
     //

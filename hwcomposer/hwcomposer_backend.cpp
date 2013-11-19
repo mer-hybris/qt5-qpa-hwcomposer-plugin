@@ -41,15 +41,8 @@
 
 #include "hwcomposer_backend.h"
 #include "hwcomposer_backend_v0.h"
-#include "hwcomposer_backend_v1.h"
-
-
-/**
- * In recent versions of the Droid headers (e.g. CM10.2-based), the #define for
- * HWC_DEVICE_API_VERSION_0_1 is overwritten in the hwcomposer_defs.h file, so
- * we re-define it again here to be able to match against 0x1 API modules.
- **/
-#define HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY HARDWARE_MODULE_API_VERSION(0, 1)
+#include "hwcomposer_backend_v10.h"
+#include "hwcomposer_backend_v11.h"
 
 
 HwComposerBackend::HwComposerBackend(hw_module_t *hwc_module)
@@ -90,21 +83,15 @@ HwComposerBackend::create()
 
     // Determine which backend we use based on the supported module API version
     switch (hwc_device->version) {
-        /**
-         * Some headers actually have HWC_DEVICE_API_VERSION_0_1 defined to
-         * 0x01, so we need to add this #if check here to avoid getting a
-         * "duplicate case value" compiler error (if both are the same).
-         **/
-#if HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY != HWC_DEVICE_API_VERSION_0_1
-        case HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY:
-#endif /* HWC_PLUGIN_DEVICE_API_VERSION_0_1_LEGACY != HWC_DEVICE_API_VERSION_0_1 */
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
             return new HwComposerBackend_v0(hwc_module, hwc_device);
             break;
-#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_0:
+            return new HwComposerBackend_v10(hwc_module, hwc_device);
+            break;
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_1:
 #ifdef HWC_DEVICE_API_VERSION_1_2
         case HWC_DEVICE_API_VERSION_1_2:
@@ -112,7 +99,7 @@ HwComposerBackend::create()
 #ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
 #endif /* HWC_DEVICE_API_VERSION_1_3 */
-            return new HwComposerBackend_v1(hwc_module, hwc_device);
+            return new HwComposerBackend_v11(hwc_module, hwc_device);
             break;
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:
