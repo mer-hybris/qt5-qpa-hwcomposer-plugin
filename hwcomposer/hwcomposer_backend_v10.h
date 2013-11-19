@@ -43,6 +43,7 @@
 #define HWCOMPOSER_BACKEND_V10_H
 
 #include "hwcomposer_backend.h"
+#include <pthread.h>
 
 class HwComposerBackend_v10 : public HwComposerBackend {
 public:
@@ -61,6 +62,10 @@ private:
     hwc_display_contents_1_t *hwc_list;
     hwc_display_contents_1_t **hwc_mList;
     int hwc_numDisplays;
+
+public: // XXX for now...
+    pthread_mutex_t vsync_mutex;
+    pthread_cond_t vsync_cond;
 };
 
 #endif /* HWCOMPOSER_BACKEND_V10_H */

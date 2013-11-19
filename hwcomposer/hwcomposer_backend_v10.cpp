@@ -41,6 +41,9 @@
 
 #include "hwcomposer_backend_v10.h"
 
+static HwComposerBackend_v10 *
+global_backend = NULL;
+
 const char *
 comp_type_str(int32_t type)
 {
@@ -106,6 +109,10 @@ void
 hwcv10_proc_vsync(const struct hwc_procs* procs, int disp, int64_t timestamp)
 {
     fprintf(stderr, "%s: procs=%x, disp=%d, timestamp=%.0f\n", __func__, procs, disp, (float)timestamp);
+
+    pthread_mutex_lock(&(global_backend->vsync_mutex));
+    pthread_cond_signal(&(global_backend->vsync_cond));
+    pthread_mutex_unlock(&(global_backend->vsync_mutex));
 }
 
 void
@@ -127,7 +134,12 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
     , hwc_list(NULL)
     , hwc_mList(NULL)
     , hwc_numDisplays(1) // "For HWC 1.0, numDisplays will always be one."
+    , vsync_mutex()
+    , vsync_cond()
 {
+    pthread_mutex_init(&vsync_mutex, NULL);
+    pthread_cond_init(&vsync_cond, NULL);
+    global_backend = this;
     hwc_device->registerProcs(hwc_device, &global_procs);
     hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
     sleepDisplay(false);
@@ -145,6 +157,9 @@ HwComposerBackend_v10::~HwComposerBackend_v10()
     if (hwc_list != NULL) {
         free(hwc_list);
     }
+
+    pthread_cond_destroy(&vsync_cond);
+    pthread_mutex_destroy(&vsync_mutex);
 }
 
 EGLNativeDisplayType
@@ -206,6 +221,12 @@ void
 HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
     HWC_PLUGIN_ASSERT_ZERO(!(hwc_list->retireFenceFd == -1));
+
+    fprintf(stderr, "Swap: waiting for vsync\n");
+    pthread_mutex_lock(&vsync_mutex);
+    pthread_cond_wait(&vsync_cond, &vsync_mutex);
+    pthread_mutex_unlock(&vsync_mutex);
+    fprintf(stderr, "Swap: received vsync\n");
 
     hwc_list->dpy = EGL_NO_DISPLAY;
     hwc_list->sur = EGL_NO_SURFACE;
