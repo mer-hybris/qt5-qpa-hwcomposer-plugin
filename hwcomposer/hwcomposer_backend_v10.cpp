@@ -48,6 +48,7 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
     , hwc_mList(NULL)
     , hwc_numDisplays(1) // "For HWC 1.0, numDisplays will always be one."
 {
+    HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
 }
 
 HwComposerBackend_v10::~HwComposerBackend_v10()
