@@ -43,6 +43,7 @@
 #define HWCOMPOSER_BACKEND_V10_H
 
 #include "hwcomposer_backend.h"
+#include <pthread.h>
 
 class HwComposerBackend_v10 : public HwComposerBackend {
 public:
