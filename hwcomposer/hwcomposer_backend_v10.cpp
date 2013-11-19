@@ -48,7 +48,6 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
     , hwc_mList(NULL)
     , hwc_numDisplays(1) // "For HWC 1.0, numDisplays will always be one."
 {
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
 }
 
 HwComposerBackend_v10::~HwComposerBackend_v10()
@@ -128,9 +127,9 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 void
 HwComposerBackend_v10::sleepDisplay(bool sleep)
 {
-    if (sleep) {
-        HWC_PLUGIN_EXPECT_ZERO(hwc_device->set(hwc_device, NULL, NULL, NULL));
-    } else {
+    HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, sleep ? 1 : 0));
+    if (!sleep) {
+        // Just in case..
         hwc_list->flags = HWC_GEOMETRY_CHANGED;
     }
 }
