@@ -103,6 +103,8 @@ HwComposerBackend_v10::destroyWindow(EGLNativeWindowType window)
 void
 HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
+    eglSwapBuffers(display, surface);
+
     int oldretire = hwc_list->retireFenceFd;
 
     hwc_list->dpy = EGL_NO_DISPLAY;
@@ -122,7 +124,7 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
         close(hwc_list->retireFenceFd);
         hwc_list->retireFenceFd = -1;
     }
-    hwc_list->flags &= ~HWC_GEOMETRY_CHANGED;
+    //hwc_list->flags &= ~HWC_GEOMETRY_CHANGED;
 }
 
 void
