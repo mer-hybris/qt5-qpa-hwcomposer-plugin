@@ -48,7 +48,7 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
     , hwc_mList(NULL)
     , hwc_numDisplays(1) // "For HWC 1.0, numDisplays will always be one."
 {
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
+    sleepDisplay(false);
 }
 
 HwComposerBackend_v10::~HwComposerBackend_v10()
@@ -103,9 +103,8 @@ HwComposerBackend_v10::destroyWindow(EGLNativeWindowType window)
 void
 HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
-    eglSwapBuffers(display, surface);
-
-    int oldretire = hwc_list->retireFenceFd;
+    fprintf(stderr, "HwComposerBackend_v10::swap(%x, %x)\n", (int)display, (int)surface);
+    //eglSwapBuffers(display, surface);
 
     hwc_list->dpy = EGL_NO_DISPLAY;
     hwc_list->sur = EGL_NO_SURFACE;
@@ -120,8 +119,11 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
     HWC_PLUGIN_ASSERT_ZERO(hwc_device->set(hwc_device, hwc_numDisplays, hwc_mList));
 
     if (hwc_list->retireFenceFd != -1) {
-        // XXX sync_wait(hwc_list->retireFenceFd, -1);
+        fprintf(stderr, "HwComposerBackend_v10::swap: retireFenceFd != -1, waiting...");
+        sync_wait(hwc_list->retireFenceFd, -1);
+        fprintf(stderr, "closing...");
         close(hwc_list->retireFenceFd);
+        fprintf(stderr, "closed.\n");
         hwc_list->retireFenceFd = -1;
     }
     //hwc_list->flags &= ~HWC_GEOMETRY_CHANGED;
@@ -130,8 +132,9 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 void
 HwComposerBackend_v10::sleepDisplay(bool sleep)
 {
+    fprintf(stderr, "HwComposerBackend_v10::sleepDisplay(%s)\n", sleep ? "true" : "false");
     HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, sleep ? 1 : 0));
-    if (!sleep) {
+    if (!sleep && hwc_list) {
         // Just in case..
         hwc_list->flags = HWC_GEOMETRY_CHANGED;
     }
