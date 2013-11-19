@@ -41,6 +41,62 @@
 
 #include "hwcomposer_backend_v10.h"
 
+const char *
+comp_type_str(int32_t type)
+{
+    switch (type) {
+        case HWC_BACKGROUND: return "BACKGROUND";
+        case HWC_FRAMEBUFFER_TARGET: return "FB TARGET";
+        case HWC_FRAMEBUFFER: return "FB";
+        case HWC_OVERLAY: return "OVERLAY";
+    }
+
+    return "unknown";
+}
+
+const char *
+blending_type_str(int32_t type)
+{
+    switch (type) {
+        case HWC_BLENDING_NONE: return "NONE";
+        case HWC_BLENDING_PREMULT: return "PREMULT";
+        case HWC_BLENDING_COVERAGE: return "COVERAGE";
+    }
+
+    return "unknown";
+}
+
+static void
+dump_display_contents(hwc_display_contents_1_t *contents)
+{
+    static const char *dump_env = getenv("HWC_DUMP_DISPLAY_CONTENTS");
+    static bool do_dump = (dump_env != NULL && strcmp(dump_env, "1") == 0);
+
+    if (!do_dump) {
+        return;
+    }
+
+    fprintf(stderr, "============ QPA-HWC: dump_display_contents(%p) ============\n",  contents);
+    fprintf(stderr, "retireFenceFd = %d\n", contents->retireFenceFd);
+    fprintf(stderr, "dpy = %p\n", contents->dpy);
+    fprintf(stderr, "sur = %p\n", contents->sur);
+    fprintf(stderr, "flags = %x\n", contents->flags);
+    fprintf(stderr, "numHwLayers = %d\n", contents->numHwLayers);
+    for (int i=0; i<contents->numHwLayers; i++) {
+        hwc_layer_1_t *layer = &(contents->hwLayers[i]);
+        fprintf(stderr, "Layer %d (%p):\n"
+                        "    type=%s, hints=%x, flags=%x, handle=%x, transform=%d, blending=%s\n"
+                        "    sourceCrop={%d, %d, %d, %d}, displayFrame={%d, %d, %d, %d}\n"
+                        "    visibleRegionScreen=<%d rect(s)>, acquireFenceFd=%d, releaseFenceFd=%d\n",
+                i, layer, comp_type_str(layer->compositionType), layer->hints, layer->flags, layer->handle,
+                layer->transform, blending_type_str(layer->blending),
+                layer->sourceCrop.left, layer->sourceCrop.top, layer->sourceCrop.right, layer->sourceCrop.bottom,
+                layer->displayFrame.left, layer->displayFrame.top, layer->displayFrame.right, layer->displayFrame.bottom,
+                layer->visibleRegionScreen.numRects, layer->acquireFenceFd, layer->releaseFenceFd);
+    }
+}
+
+
 HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
@@ -48,6 +104,7 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
     , hwc_mList(NULL)
     , hwc_numDisplays(1) // "For HWC 1.0, numDisplays will always be one."
 {
+    sleepDisplay(false);
 }
 
 HwComposerBackend_v10::~HwComposerBackend_v10()
@@ -78,11 +135,31 @@ HwComposerBackend_v10::createWindow(int width, int height)
     HWC_PLUGIN_EXPECT_NULL(hwc_list);
     HWC_PLUGIN_EXPECT_NULL(hwc_mList);
 
-    // Display contents list (XXX: we have 0 layers, probably don't need to allocate space for them)
-    hwc_list = (hwc_display_contents_1_t *) calloc(1, sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t));
+    // Number of hardware layers we want (right now, only one rendered via GLES)
+    int numHwLayers = 1;
+
+    // Display contents list
+    size_t required = sizeof(hwc_display_contents_1_t) + numHwLayers * sizeof(hwc_layer_1_t);
+    hwc_list = (hwc_display_contents_1_t *) calloc(1, required);
     hwc_list->retireFenceFd = -1;
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
-    hwc_list->numHwLayers = 0;
+    hwc_list->numHwLayers = numHwLayers;
+
+    hwc_rect_t r = { 0, 0, width, height };
+
+    hwc_layer_1_t *layer = &(hwc_list->hwLayers[0]);
+    layer->compositionType = HWC_FRAMEBUFFER;
+    layer->hints = 0;
+    layer->flags = HWC_SKIP_LAYER;
+    layer->handle = NULL;
+    layer->transform = 0;
+    layer->blending = HWC_BLENDING_NONE;
+    layer->sourceCrop = r;
+    layer->displayFrame = r;
+    layer->visibleRegionScreen.numRects = 1;
+    layer->visibleRegionScreen.rects = &layer->displayFrame;
+    layer->acquireFenceFd = -1;
+    layer->releaseFenceFd = -1;
 
     // A list of display contents pointers for each display
     hwc_mList = (hwc_display_contents_1_t **) calloc(hwc_numDisplays, sizeof(hwc_display_contents_1_t *));
@@ -102,7 +179,7 @@ HwComposerBackend_v10::destroyWindow(EGLNativeWindowType window)
 void
 HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
-    int oldretire = hwc_list->retireFenceFd;
+    HWC_PLUGIN_ASSERT_ZERO(!(hwc_list->retireFenceFd == -1));
 
     hwc_list->dpy = EGL_NO_DISPLAY;
     hwc_list->sur = EGL_NO_SURFACE;
@@ -114,22 +191,21 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
     // overlay layers.
     hwc_list->dpy = eglGetCurrentDisplay();
     hwc_list->sur = eglGetCurrentSurface(EGL_DRAW);
+    dump_display_contents(hwc_list);
     HWC_PLUGIN_ASSERT_ZERO(hwc_device->set(hwc_device, hwc_numDisplays, hwc_mList));
 
     if (hwc_list->retireFenceFd != -1) {
-        // XXX sync_wait(hwc_list->retireFenceFd, -1);
+        sync_wait(hwc_list->retireFenceFd, -1);
         close(hwc_list->retireFenceFd);
         hwc_list->retireFenceFd = -1;
     }
-    hwc_list->flags &= ~HWC_GEOMETRY_CHANGED;
 }
 
 void
 HwComposerBackend_v10::sleepDisplay(bool sleep)
 {
     HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, sleep ? 1 : 0));
-    if (!sleep) {
-        // Just in case..
+    if (!sleep && hwc_list != NULL) {
         hwc_list->flags = HWC_GEOMETRY_CHANGED;
     }
 }
