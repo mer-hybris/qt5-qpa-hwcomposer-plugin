@@ -96,6 +96,30 @@ dump_display_contents(hwc_display_contents_1_t *contents)
     }
 }
 
+void
+hwcv10_proc_invalidate(const struct hwc_procs* procs)
+{
+    fprintf(stderr, "%s: procs=%x\n", __func__, procs);
+}
+
+void
+hwcv10_proc_vsync(const struct hwc_procs* procs, int disp, int64_t timestamp)
+{
+    fprintf(stderr, "%s: procs=%x, disp=%d, timestamp=%.0f\n", __func__, procs, disp, (float)timestamp);
+}
+
+void
+hwcv10_proc_hotplug(const struct hwc_procs* procs, int disp, int connected)
+{
+    fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
+}
+
+static hwc_procs_t global_procs = {
+    hwcv10_proc_invalidate,
+    hwcv10_proc_vsync,
+    hwcv10_proc_hotplug,
+};
+
 
 HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
@@ -104,6 +128,8 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
     , hwc_mList(NULL)
     , hwc_numDisplays(1) // "For HWC 1.0, numDisplays will always be one."
 {
+    hwc_device->registerProcs(hwc_device, &global_procs);
+    hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
     sleepDisplay(false);
 }
 
