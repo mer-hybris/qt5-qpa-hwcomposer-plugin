@@ -64,6 +64,10 @@
         qWarning("QPA-HWC: %s in %s returned %x", (#x), __func__, (unsigned int)res); }
 
 // Evaluate "x", if it is NULL, exit with a fatal error
+#define HWC_PLUGIN_FATAL(x) \
+    qFatal("QPA-HWC: %s", x, __func__)
+
+// Evaluate "x", if it is NULL, exit with a fatal error
 #define HWC_PLUGIN_ASSERT_NOT_NULL(x) \
     { void *res; if ((res = (x)) == NULL) \
         qFatal("QPA-HWC: %s in %s returned %x", (#x), __func__, (unsigned int)res); }

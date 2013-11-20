@@ -74,6 +74,7 @@ HwComposerContext::HwComposerContext()
     : info(new HwComposerScreenInfo())
     , backend(NULL)
     , display_off(false)
+    , window_created(false)
     , fps(0)
 {
     // We need to catch the SIGTERM and SIGINT signals, so that we can do a
@@ -147,6 +148,11 @@ EGLNativeWindowType HwComposerContext::createNativeWindow(const QSurfaceFormat &
 {
     Q_UNUSED(format);
 
+    if (window_created) {
+        HWC_PLUGIN_FATAL("There can only be one window, someone tried to create more.");
+    }
+
+    window_created = true;
     QSize size = screenSize();
     return backend->createWindow(size.width(), size.height());
 }

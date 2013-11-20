@@ -85,6 +85,7 @@ private:
     HwComposerScreenInfo *info;
     HwComposerBackend *backend;
     bool display_off;
+    bool window_created;
     qreal fps;
 };
 
