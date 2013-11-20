@@ -43,6 +43,9 @@
 #define HWCOMPOSER_BACKEND_V10_H
 
 #include "hwcomposer_backend.h"
+
+#ifdef HWC_DEVICE_API_VERSION_1_0
+
 #include <pthread.h>
 
 class HwComposerBackend_v10 : public HwComposerBackend {
@@ -63,5 +66,7 @@ private:
     hwc_display_contents_1_t **hwc_mList;
     int hwc_numDisplays;
 };
+
+#endif /* HWC_DEVICE_API_VERSION_1_0 */
 
 #endif /* HWCOMPOSER_BACKEND_V10_H */

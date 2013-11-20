@@ -41,6 +41,8 @@
 
 #include "hwcomposer_backend_v10.h"
 
+#ifdef HWC_DEVICE_API_VERSION_1_0
+
 /* For vsync thread synchronization */
 static pthread_mutex_t vsync_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t vsync_cond = PTHREAD_COND_INITIALIZER;
@@ -264,3 +266,5 @@ HwComposerBackend_v10::refreshRate()
     qDebug("VSync: %dns, %ffps", vsyncVal, fps);
     return fps;
 }
+
+#endif /* HWC_DEVICE_API_VERSION_1_0 */
