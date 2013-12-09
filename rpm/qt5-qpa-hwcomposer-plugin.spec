@@ -1,4 +1,4 @@
-Name:       qt5-qpa-hwcomposer-plugin
+Name:       qt5-qpa-hwcomposer-plugin-sbj
 Summary:    Qt 5 QPA hwcomposer plugin
 Version:    5.1.0+hwc0
 Release:    1
@@ -11,8 +11,10 @@ BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5PlatformSupport)
 BuildRequires:  pkgconfig(egl)
-BuildRequires:  pkgconfig(glesv2)
-BuildRequires:  pkgconfig(wayland-egl)
+BuildRequires:  libhybris-sbj-libGLESv2
+BuildRequires:  libhybris-sbj-libGLESv2-devel
+BuildRequires:  libhybris-sbj-libwayland-egl
+BuildRequires:  libhybris-sbj-libwayland-egl-devel
 BuildRequires:  pkgconfig(libhardware)
 # Comment out the libsync dependency for old hw adaptations
 #BuildRequires:  pkgconfig(libsync)
