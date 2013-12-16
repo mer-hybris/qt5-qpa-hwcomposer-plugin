@@ -83,7 +83,7 @@ QEglFSIntegration::QEglFSIntegration()
 #if !defined(QT_NO_EVDEV) && (!defined(Q_OS_ANDROID) || defined(Q_OS_ANDROID_NO_SDK))
     new QEvdevKeyboardManager(QLatin1String("EvdevKeyboard"), QString() /* spec */, this);
     new QEvdevMouseManager(QLatin1String("EvdevMouse"), QString() /* spec */, this);
-    new QEvdevTouchScreenHandlerThread(QString() /* spec */, this);
+    new QEvdevTouchScreenHandler(QString() /* spec */, this);
 #endif
 
     mHwc = new HwComposerContext();
