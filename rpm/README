@@ -1,0 +1,9 @@
+If you want to update these .spec files:
+
+  1. Edit qt5-qpa-hwcomposer-plugin.spec.in
+  2. Run precheckin.sh
+
+If you want to add a new variant:
+
+  1. Edit VARIANTS= in prechecking.sh
+  2. Run precheckin.sh
