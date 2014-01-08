@@ -25,6 +25,7 @@ BuildRequires:  wayland-devel
 BuildRequires:  pkgconfig(udev)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(mtdev)
+Provides: qt5-eglfs-qcom-hwcomposer-plugin
 
 %description
 This package contains a Qt 5 QPA plugin using libhybris' Droid
