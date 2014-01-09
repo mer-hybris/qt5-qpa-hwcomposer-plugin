@@ -1,6 +1,6 @@
 Name:       qt5-qpa-hwcomposer-plugin-boston
 Summary:    Qt 5 QPA hwcomposer plugin (boston variant)
-Version:    5.1.0+hwc0
+Version:    5.1.0+hwc7
 Release:    1
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
