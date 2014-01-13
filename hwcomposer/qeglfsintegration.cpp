@@ -78,7 +78,9 @@ QEglFSIntegration::QEglFSIntegration()
     , mEventDispatcher(createUnixEventDispatcher())
     , mFontDb(new QGenericUnixFontDatabase())
 {
+#if QT_VERSION < QT_VERSION_CHECK(5, 2, 0)
     QGuiApplicationPrivate::instance()->setEventDispatcher(mEventDispatcher);
+#endif
 
 #if !defined(QT_NO_EVDEV) && (!defined(Q_OS_ANDROID) || defined(Q_OS_ANDROID_NO_SDK))
     new QEvdevKeyboardManager(QLatin1String("EvdevKeyboard"), QString() /* spec */, this);
@@ -173,7 +175,11 @@ QPlatformFontDatabase *QEglFSIntegration::fontDatabase() const
     return mFontDb;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 2, 0)
 QAbstractEventDispatcher *QEglFSIntegration::guiThreadEventDispatcher() const
+#else
+QAbstractEventDispatcher *QEglFSIntegration::createEventDispatcher() const
+#endif
 {
     return mEventDispatcher;
 }
