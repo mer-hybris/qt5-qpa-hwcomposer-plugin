@@ -25,7 +25,8 @@ BuildRequires:  wayland-devel
 BuildRequires:  pkgconfig(udev)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(mtdev)
-Provides: qt5-eglfs-qcom-hwcomposer-plugin
+Obsoletes: qt5-eglfs-qcom-hwcomposer-plugin <= 5.1.0+git15
+Provides: qt5-eglfs-qcom-hwcomposer-plugin > 5.1.0+git15
 
 %description
 This package contains a Qt 5 QPA plugin using libhybris' Droid
@@ -44,6 +45,9 @@ make %{_smp_mflags}
 rm -rf %{buildroot}
 cd hwcomposer
 %qmake5_install
+
+# doesn't exist on Qt 5.1, we don't currently care about this for 5.2
+rm -f %{buildroot}/usr/lib/cmake/Qt5Gui/Qt5Gui_QEglFSIntegrationPlugin.cmake
 
 %files
 %defattr(-,root,root,-)
