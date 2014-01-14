@@ -6,6 +6,9 @@ Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
 URL:        http://github.com/mer-hybris/qt5-qpa-hwcomposer-plugin
 Source0:    %{name}-%{version}.tar.bz2
+Source1:    README
+Source2:    precheckin.sh
+Source3:    qt5-qpa-hwcomposer-plugin.spec.in
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
