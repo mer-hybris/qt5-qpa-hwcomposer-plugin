@@ -1,7 +1,7 @@
 Name:       qt5-qpa-hwcomposer-plugin
 Summary:    Qt 5 QPA hwcomposer plugin
 Version:    5.1.0+hwc0
-Release:    1
+Release:    2
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
 URL:        http://github.com/mer-hybris/qt5-qpa-hwcomposer-plugin
@@ -14,8 +14,11 @@ BuildRequires:  pkgconfig(egl)
 BuildRequires:  pkgconfig(glesv2)
 BuildRequires:  pkgconfig(wayland-egl)
 BuildRequires:  pkgconfig(libhardware)
-# Comment out the libsync dependency for old hw adaptations
-#BuildRequires:  pkgconfig(libsync)
+%if 0%{?droid_has_no_libsync} == 0
+# Define droid_has_no_libsync 1 in prjconf if the android-headers have
+# no libsync (in older hw adaptations)
+BuildRequires:  pkgconfig(libsync)
+%endif
 BuildRequires:  pkgconfig(hybris-egl-platform)
 BuildRequires:  pkgconfig(android-headers)
 BuildRequires:  qt5-qtwayland-wayland_egl-devel
