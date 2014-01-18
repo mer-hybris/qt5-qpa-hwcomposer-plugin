@@ -47,7 +47,6 @@
 static pthread_mutex_t vsync_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t vsync_cond = PTHREAD_COND_INITIALIZER;
 
-
 const char *
 comp_type_str(int32_t type)
 {
@@ -245,7 +244,15 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
 void
 HwComposerBackend_v10::sleepDisplay(bool sleep)
 {
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, sleep ? 1 : 0));
+    if (sleep) {
+        HWC_PLUGIN_EXPECT_ZERO(hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0));
+        HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 1));
+    }
+    else {
+        HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
+        HWC_PLUGIN_EXPECT_ZERO(hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1));
+    }
+
     if (!sleep && hwc_list != NULL) {
         hwc_list->flags = HWC_GEOMETRY_CHANGED;
     }
