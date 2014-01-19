@@ -1,4 +1,5 @@
 #!/bin/sh
+# Run this in the rpm/ directory to get the relative paths right
 
 PACKAGE=qt5-qpa-hwcomposer-plugin
 VARIANTS="sbj boston"
