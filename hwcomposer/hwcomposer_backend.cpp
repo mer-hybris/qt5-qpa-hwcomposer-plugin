@@ -61,6 +61,11 @@ HwComposerBackend::create()
     hw_module_t *hwc_module = NULL;
     hw_device_t *hwc_device = NULL;
 
+    // Some implementations insist on having the framebuffer module opened before loading
+    // the hardware composer one. Therefor we rely on using the fbdev HYBRIS_EGLPLATFORM
+    // here and use eglGetDisplay to initialize it.
+    eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
     // Open hardware composer
     HWC_PLUGIN_ASSERT_ZERO(hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)));
 
