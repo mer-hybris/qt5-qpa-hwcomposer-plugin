@@ -53,6 +53,9 @@ packagesExist(hwcomposer-egl) {
 # Avoid X11 header collision
 DEFINES += MESA_EGL_NO_X11_HEADERS
 
+# Match define in evdevtouch.pri
+DEFINES += USE_MTDEV
+
 SOURCES +=  $$PWD/qeglfsintegration.cpp \
             $$PWD/qeglfswindow.cpp \
             $$PWD/qeglfsbackingstore.cpp \
