@@ -81,13 +81,19 @@ HwComposerBackend::create()
     // Open hardware composer device
     HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
 
+    uint32_t version = hwc_device->version;
+    if ((version & 0xffff0000) == 0) {
+        // legacy version encoding
+        version <<= 16;
+    }
+
     fprintf(stderr, "== hwcomposer device ==\n");
-    fprintf(stderr, " * Version: %x\n", hwc_device->version);
+    fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);
     fprintf(stderr, " * Module: %p\n", hwc_device->module);
     fprintf(stderr, "== hwcomposer device ==\n");
 
     // Determine which backend we use based on the supported module API version
-    switch (hwc_device->version) {
+    switch (version) {
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
@@ -110,8 +116,10 @@ HwComposerBackend::create()
             break;
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:
-            fprintf(stderr, "Unknown hwcomposer API: 0x%x\n",
-                    hwc_module->module_api_version);
+            fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
+                    hwc_module->module_api_version,
+                    hwc_device->version,
+                    version);
             return NULL;
             break;
     }
