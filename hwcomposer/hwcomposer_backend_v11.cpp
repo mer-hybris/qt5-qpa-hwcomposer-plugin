@@ -155,6 +155,8 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc_win);
 
+    eglSwapBuffers(display, surface);
+
     HWComposerNativeWindowBuffer *front;
     hwc_win->lockFrontBuffer(&front);
 
