@@ -43,6 +43,49 @@
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
+class HWComposer : public HWComposerNativeWindow
+{
+    private:
+        hwc_layer_1_t *fblayer;
+        hwc_composer_device_1_t *hwcdevice;
+        hwc_display_contents_1_t **mlist;
+    protected:
+        void present(HWComposerNativeWindowBuffer *buffer);
+
+    public:
+
+    HWComposer(unsigned int width, unsigned int height, unsigned int format, hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList, hwc_layer_1_t *layer);
+    void set();
+};
+
+HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int format, hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList, hwc_layer_1_t *layer) : HWComposerNativeWindow(width, height, format)
+{
+    fblayer = layer;
+    hwcdevice = device;
+    mlist = mList;
+}
+
+void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
+{
+    int oldretire = mlist[0]->retireFenceFd;
+    mlist[0]->retireFenceFd = -1;
+    fblayer->handle = buffer->handle;
+    fblayer->acquireFenceFd = getFenceBufferFd(buffer);
+    fblayer->releaseFenceFd = -1;
+    int err = hwcdevice->prepare(hwcdevice, HWC_NUM_DISPLAY_TYPES, mlist);
+    assert(err == 0);
+
+    err = hwcdevice->set(hwcdevice, HWC_NUM_DISPLAY_TYPES, mlist);
+    assert(err == 0);
+    setFenceBufferFd(buffer, fblayer->releaseFenceFd);
+
+    if (oldretire != -1)
+    {   
+        sync_wait(oldretire, -1);
+        close(oldretire);
+    }
+}
+
 HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device)
     : HwComposerBackend(hwc_module)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
@@ -90,7 +133,6 @@ HwComposerBackend_v11::createWindow(int width, int height)
     HWC_PLUGIN_EXPECT_NULL(hwc_list);
     HWC_PLUGIN_EXPECT_NULL(hwc_mList);
 
-    hwc_win = new HWComposerNativeWindow(width, height, HAL_PIXEL_FORMAT_RGBA_8888);
 
     size_t neededsize = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
     hwc_list = (hwc_display_contents_1_t *) malloc(neededsize);
@@ -137,6 +179,7 @@ HwComposerBackend_v11::createWindow(int width, int height)
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
     hwc_list->numHwLayers = 2;
 
+    hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888, hwc_device, hwc_mList, &hwc_list->hwLayers[1]);
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 
@@ -154,39 +197,8 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
     // TODO: Wait for vsync?
 
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc_win);
-
+    
     eglSwapBuffers(display, surface);
-
-    HWComposerNativeWindowBuffer *front;
-    hwc_win->lockFrontBuffer(&front);
-
-    hwc_mList[0]->hwLayers[1].handle = front->handle;
-    hwc_mList[0]->hwLayers[0].handle = NULL;
-    hwc_mList[0]->hwLayers[0].flags = HWC_SKIP_LAYER;
-
-    oldretire = hwc_mList[0]->retireFenceFd;
-    oldrelease = hwc_mList[0]->hwLayers[0].releaseFenceFd;
-    oldrelease2 = hwc_mList[0]->hwLayers[1].releaseFenceFd;
-
-    HWC_PLUGIN_ASSERT_ZERO(hwc_device->prepare(hwc_device, HWC_NUM_DISPLAY_TYPES, hwc_mList));
-    HWC_PLUGIN_ASSERT_ZERO(hwc_device->set(hwc_device, HWC_NUM_DISPLAY_TYPES, hwc_mList));
-
-    hwc_win->unlockFrontBuffer(front);
-
-    if (oldrelease != -1) {
-        sync_wait(oldrelease, -1);
-        close(oldrelease);
-    }
-
-    if (oldrelease2 != -1) {
-        sync_wait(oldrelease2, -1);
-        close(oldrelease2);
-    }
-
-    if (oldretire != -1) {
-        sync_wait(oldretire, -1);
-        close(oldretire);
-    }
 }
 
 void
