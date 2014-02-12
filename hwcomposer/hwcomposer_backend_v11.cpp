@@ -49,20 +49,27 @@ class HWComposer : public HWComposerNativeWindow
         hwc_layer_1_t *fblayer;
         hwc_composer_device_1_t *hwcdevice;
         hwc_display_contents_1_t **mlist;
+        int num_displays;
     protected:
         void present(HWComposerNativeWindowBuffer *buffer);
 
     public:
 
-    HWComposer(unsigned int width, unsigned int height, unsigned int format, hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList, hwc_layer_1_t *layer);
+    HWComposer(unsigned int width, unsigned int height, unsigned int format,
+            hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList,
+            hwc_layer_1_t *layer, int num_displays);
     void set();
 };
 
-HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int format, hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList, hwc_layer_1_t *layer) : HWComposerNativeWindow(width, height, format)
+HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int format,
+        hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList,
+        hwc_layer_1_t *layer, int num_displays)
+    : HWComposerNativeWindow(width, height, format)
+    , fblayer(layer)
+    , hwcdevice(device)
+    , mlist(mList)
+    , num_displays(num_displays)
 {
-    fblayer = layer;
-    hwcdevice = device;
-    mlist = mList;
 }
 
 void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
@@ -72,11 +79,13 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     fblayer->handle = buffer->handle;
     fblayer->acquireFenceFd = getFenceBufferFd(buffer);
     fblayer->releaseFenceFd = -1;
-    int err = hwcdevice->prepare(hwcdevice, HWC_NUM_DISPLAY_TYPES, mlist);
-    assert(err == 0);
 
-    err = hwcdevice->set(hwcdevice, HWC_NUM_DISPLAY_TYPES, mlist);
-    assert(err == 0);
+    int err = hwcdevice->prepare(hwcdevice, num_displays, mlist);
+    HWC_PLUGIN_EXPECT_ZERO(err);
+
+    err = hwcdevice->set(hwcdevice, num_displays, mlist);
+    HWC_PLUGIN_EXPECT_ZERO(err);
+
     setFenceBufferFd(buffer, fblayer->releaseFenceFd);
 
     if (oldretire != -1)
@@ -86,7 +95,7 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     }
 }
 
-HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device)
+HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays)
     : HwComposerBackend(hwc_module)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
     , hwc_win(NULL)
@@ -95,6 +104,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , oldretire(-1)
     , oldrelease(-1)
     , oldrelease2(-1)
+    , num_displays(num_displays)
 {
     HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
 }
@@ -136,10 +146,10 @@ HwComposerBackend_v11::createWindow(int width, int height)
 
     size_t neededsize = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
     hwc_list = (hwc_display_contents_1_t *) malloc(neededsize);
-    hwc_mList = (hwc_display_contents_1_t **) malloc(HWC_NUM_DISPLAY_TYPES * sizeof(hwc_display_contents_1_t *));
+    hwc_mList = (hwc_display_contents_1_t **) malloc(num_displays * sizeof(hwc_display_contents_1_t *));
     const hwc_rect_t r = { 0, 0, width, height };
 
-    for (int i = 0; i < HWC_NUM_DISPLAY_TYPES; i++) {
+    for (int i = 0; i < num_displays; i++) {
          hwc_mList[i] = hwc_list;
     }
 
@@ -179,7 +189,8 @@ HwComposerBackend_v11::createWindow(int width, int height)
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
     hwc_list->numHwLayers = 2;
 
-    hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888, hwc_device, hwc_mList, &hwc_list->hwLayers[1]);
+    hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888,
+            hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays);
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 
