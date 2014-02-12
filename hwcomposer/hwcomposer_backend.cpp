@@ -83,8 +83,11 @@ HwComposerBackend::create()
 
     uint32_t version = hwc_device->version;
     if ((version & 0xffff0000) == 0) {
-        // legacy version encoding
-        version <<= 16;
+        // Assume header version is always 1
+        uint32_t header_version = 1;
+
+        // Legacy version encoding
+        version = (version << 16) | header_version;
     }
 
     fprintf(stderr, "== hwcomposer device ==\n");
