@@ -106,7 +106,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , oldrelease2(-1)
     , num_displays(num_displays)
 {
-    HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
+    sleepDisplay(false);
 }
 
 HwComposerBackend_v11::~HwComposerBackend_v11()
@@ -215,7 +215,15 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 void
 HwComposerBackend_v11::sleepDisplay(bool sleep)
 {
-    // TODO
+    if (sleep) {
+        HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 1));
+    } else {
+        HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
+
+        if (hwc_list) {
+            hwc_list->flags |= HWC_GEOMETRY_CHANGED;
+        }
+    }
 }
 
 float
