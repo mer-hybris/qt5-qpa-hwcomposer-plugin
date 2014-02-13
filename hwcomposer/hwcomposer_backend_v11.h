@@ -51,7 +51,7 @@
 
 class HwComposerBackend_v11 : public HwComposerBackend {
 public:
-    HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device);
+    HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
     virtual ~HwComposerBackend_v11();
 
     virtual EGLNativeDisplayType display();
@@ -69,6 +69,7 @@ private:
     int oldretire;
     int oldrelease;
     int oldrelease2;
+    int num_displays;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
