@@ -100,6 +100,7 @@ HwComposerBackend::create()
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
+        case 0x30001:
             return new HwComposerBackend_v0(hwc_module, hwc_device);
             break;
 #ifdef HWC_DEVICE_API_VERSION_1_0
