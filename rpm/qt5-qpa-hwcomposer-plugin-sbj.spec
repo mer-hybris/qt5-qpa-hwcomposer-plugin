@@ -19,11 +19,8 @@ BuildRequires:  libhybris-sbj-libGLESv2-devel
 BuildRequires:  libhybris-sbj-libwayland-egl
 BuildRequires:  libhybris-sbj-libwayland-egl-devel
 BuildRequires:  pkgconfig(libhardware)
-%if 0%{?droid_has_no_libsync} == 0
-# Define droid_has_no_libsync 1 in prjconf if the android-headers have
-# no libsync (in older hw adaptations)
-BuildRequires:  pkgconfig(libsync)
-%endif
+# Comment out the libsync dependency for old hw adaptations
+#BuildRequires:  pkgconfig(libsync)
 BuildRequires:  pkgconfig(hybris-egl-platform)
 BuildRequires:  pkgconfig(android-headers)
 BuildRequires:  qt5-qtwayland-wayland_egl-devel
