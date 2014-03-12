@@ -95,6 +95,15 @@ HwComposerBackend::create()
     fprintf(stderr, " * Module: %p\n", hwc_device->module);
     fprintf(stderr, "== hwcomposer device ==\n");
 
+    // Special-case for old hw adaptations that have the version encoded in
+    // legacy format, we have to check hwc_device->version directly, because
+    // the constants are actually encoded in the old format
+    if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
+        (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
+        (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
+        return new HwComposerBackend_v0(hwc_module, hwc_device);
+    }
+
     // Determine which backend we use based on the supported module API version
     switch (version) {
         case HWC_DEVICE_API_VERSION_0_1:
