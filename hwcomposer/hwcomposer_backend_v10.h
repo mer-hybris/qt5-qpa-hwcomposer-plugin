@@ -42,6 +42,8 @@
 #ifndef HWCOMPOSER_BACKEND_V10_H
 #define HWCOMPOSER_BACKEND_V10_H
 
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
+
 #include "hwcomposer_backend.h"
 
 #ifdef HWC_DEVICE_API_VERSION_1_0
@@ -68,5 +70,7 @@ private:
 };
 
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
+
+#endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
 
 #endif /* HWCOMPOSER_BACKEND_V10_H */

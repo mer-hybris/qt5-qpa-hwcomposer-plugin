@@ -111,12 +111,12 @@ HwComposerBackend::create()
         case HWC_DEVICE_API_VERSION_0_3:
             return new HwComposerBackend_v0(hwc_module, hwc_device);
             break;
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 #ifdef HWC_DEVICE_API_VERSION_1_0
         case HWC_DEVICE_API_VERSION_1_0:
             return new HwComposerBackend_v10(hwc_module, hwc_device);
             break;
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
-#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_1:
             return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
             break;

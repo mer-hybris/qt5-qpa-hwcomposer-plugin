@@ -41,6 +41,7 @@
 
 #include "hwcomposer_backend_v10.h"
 
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 #ifdef HWC_DEVICE_API_VERSION_1_0
 
 /* For vsync thread synchronization */
@@ -275,3 +276,4 @@ HwComposerBackend_v10::refreshRate()
 }
 
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
+#endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
