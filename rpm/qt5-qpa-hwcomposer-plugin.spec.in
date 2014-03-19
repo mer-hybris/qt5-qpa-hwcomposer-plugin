@@ -1,6 +1,6 @@
 Name:       qt5-qpa-hwcomposer-plugin-__VARIANT__
 Summary:    Qt 5 QPA hwcomposer plugin (__VARIANT__ variant)
-Version:    5.1.0+hwc7
+Version:    5.1.0+hwc10
 Release:    1
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
