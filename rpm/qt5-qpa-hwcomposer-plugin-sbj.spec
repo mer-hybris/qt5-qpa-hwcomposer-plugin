@@ -1,6 +1,6 @@
 Name:       qt5-qpa-hwcomposer-plugin-sbj
 Summary:    Qt 5 QPA hwcomposer plugin (sbj variant)
-Version:    5.1.0+hwc10
+Version:    5.1.0+hwc10+sbj1
 Release:    1
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
