@@ -1,7 +1,7 @@
 Name:       qt5-qpa-hwcomposer-plugin
 Summary:    Qt 5 QPA hwcomposer plugin
-Version:    5.1.0+hwc0
-Release:    2
+Version:    5.1.0.1
+Release:    1
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
 URL:        http://github.com/mer-hybris/qt5-qpa-hwcomposer-plugin
