@@ -48,11 +48,13 @@
 
 #include <QtPlatformSupport/private/qgenericunixfontdatabase_p.h>
 #include <QtPlatformSupport/private/qgenericunixeventdispatcher_p.h>
+#include <QtPlatformSupport/private/qgenericunixthemes_p.h>
 #include <QtPlatformSupport/private/qeglconvenience_p.h>
 #include <QtPlatformSupport/private/qeglplatformcontext_p.h>
 #include <QtPlatformSupport/private/qeglpbuffer_p.h>
 
 #include <qpa/qplatformwindow.h>
+#include <qpa/qplatformservices.h>
 #include <QtGui/QSurfaceFormat>
 #include <QtGui/QOpenGLContext>
 #include <QtGui/QScreen>
@@ -66,6 +68,15 @@
 #include <EGL/egl.h>
 
 QT_BEGIN_NAMESPACE
+
+class GenericEglFSTheme: public QGenericUnixTheme
+{
+public:
+    static QStringList themeNames()
+    {
+        return QStringList() << QLatin1String("generic_eglfs");
+    }
+};
 
 QEglFSIntegration::QEglFSIntegration()
     : mHwc(NULL)
@@ -236,6 +247,19 @@ EGLConfig QEglFSIntegration::chooseConfig(EGLDisplay display, const QSurfaceForm
     QEglConfigChooser chooser(display);
     chooser.setSurfaceFormat(format);
     return chooser.chooseConfig();
+}
+
+QStringList QEglFSIntegration::themeNames() const
+{
+    return GenericEglFSTheme::themeNames();
+}
+
+QPlatformTheme *QEglFSIntegration::createPlatformTheme(const QString &name) const
+{
+    if (name == QLatin1String("generic_qeglfs"))
+        return new GenericEglFSTheme;
+
+    return GenericEglFSTheme::createUnixTheme(name);
 }
 
 QT_END_NAMESPACE

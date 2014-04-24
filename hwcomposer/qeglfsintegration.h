@@ -88,6 +88,10 @@ public:
 
     QPlatformInputContext *inputContext() const { return mInputContext; }
 
+    QStringList themeNames() const;
+
+    QPlatformTheme *createPlatformTheme(const QString &name) const;
+
 private:
     HwComposerContext *mHwc;
     EGLDisplay mDisplay;
