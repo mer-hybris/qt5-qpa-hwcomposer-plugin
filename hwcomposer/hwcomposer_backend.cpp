@@ -124,13 +124,17 @@ HwComposerBackend::create()
             break;
 #ifdef HWC_DEVICE_API_VERSION_1_2
         case HWC_DEVICE_API_VERSION_1_2:
+            /* hwcomposer 1.2 and beyond have virtual displays */
+            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
+            break;
+
 #endif /* HWC_DEVICE_API_VERSION_1_2 */
 #ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
-#endif /* HWC_DEVICE_API_VERSION_1_3 */
-            /* hwcomposer 1.2 and beyond have virtual displays */
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES + 1);
+            /* Do not use virtual displays */
+            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_PHYSICAL_DISPLAY_TYPES);
             break;
+#endif /* HWC_DEVICE_API_VERSION_1_3 */
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:
             fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
