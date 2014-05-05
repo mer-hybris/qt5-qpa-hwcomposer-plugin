@@ -124,7 +124,8 @@ HwComposerBackend::create()
             break;
 #ifdef HWC_DEVICE_API_VERSION_1_2
         case HWC_DEVICE_API_VERSION_1_2:
-            /* hwcomposer 1.2 and beyond have virtual displays */
+            /* hwcomposer 1.2 and beyond have virtual displays however virtual displays are
+               only used in hwcomposer 1.2 */
             return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
             break;
 
