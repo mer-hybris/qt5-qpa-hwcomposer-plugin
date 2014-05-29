@@ -120,6 +120,7 @@ HwComposerBackend::create()
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_1:
+            // "For HWC 1.1, numDisplays will always be HWC_NUM_PHYSICAL_DISPLAY_TYPES"
             return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
             break;
 #ifdef HWC_DEVICE_API_VERSION_1_2
