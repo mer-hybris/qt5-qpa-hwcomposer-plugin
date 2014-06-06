@@ -44,6 +44,7 @@
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
 static int g_external_connected = 0;
+static int g_external_connected_next = 0;
 static int g_unblanked_displays[HWC_NUM_DISPLAY_TYPES] = { 0 };
 
 class HwComposerBackendWindow_v11 : public HWComposerNativeWindow
@@ -92,9 +93,7 @@ hwcv11_proc_hotplug(const struct hwc_procs* procs, int disp, int connected)
 {
     fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
     if (disp == HWC_DISPLAY_EXTERNAL) {
-        g_external_connected = connected;
-        // TODO: Force re-run of sleep display so that the external display is
-        // powered on immediately (and not only after blank/unblank cycle)
+        g_external_connected_next = connected;
     }
 }
 
@@ -407,6 +406,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , width(0)
     , height(0)
     , content(new HwComposerContent_v11(hwc_device, num_displays))
+    , display_sleeping(false)
 {
     fprintf(stderr, "Registering hwc procs\n");
     hwc_device->registerProcs(hwc_device, &hwcv11_procs);
@@ -461,6 +461,14 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
     // TODO: Wait for vsync?
 
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc_win);
+
+    if (g_external_connected != g_external_connected_next) {
+        g_external_connected = g_external_connected_next;
+
+        // Force re-run of sleep display so that the external display is
+        // powered on/off immediately (and not only after blank/unblank cycle)
+        sleepDisplay(display_sleeping);
+    }
     
     eglSwapBuffers(display, surface);
 }
@@ -507,15 +515,25 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
 #endif
 
         if (g_external_connected) {
+            if (g_unblanked_displays[0]) {
+                fprintf(stderr, "Blanking internal display\n");
+                g_unblanked_displays[0] = (hwc_device->blank(hwc_device, 0, 1) != 0);
+            }
             fprintf(stderr, "Unblanking external display\n");
             g_unblanked_displays[1] = (hwc_device->blank(hwc_device, 1, 0) == 0);
         } else {
+            if (g_unblanked_displays[1]) {
+                fprintf(stderr, "Blanking external display\n");
+                g_unblanked_displays[1] = (hwc_device->blank(hwc_device, 1, 1) != 0);
+            }
             fprintf(stderr, "Unblanking internal display\n");
             g_unblanked_displays[0] = (hwc_device->blank(hwc_device, 0, 0) == 0);
         }
 
         // TODO: Force geometry change
     }
+
+    display_sleeping = sleep;
 }
 
 float

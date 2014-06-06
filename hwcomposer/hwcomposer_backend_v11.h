@@ -103,6 +103,7 @@ private:
     int width;
     int height;
     HwComposerContent_v11 *content;
+    bool display_sleeping;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
