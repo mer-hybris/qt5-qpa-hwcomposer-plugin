@@ -41,7 +41,7 @@ PKGCONFIG += libudev glib-2.0 mtdev
 # libhybris / droid integration
 PKGCONFIG += android-headers libhardware hybris-egl-platform
 
-packagesExist(hwcomposer-egl) {
+packagesExist(hwcomposer-egl): packagesExist(libsync) {
     # hwcomposer-egl is shipped in recent versions of libhybris libEGL-devel
     # This also requires a fairly recent version of the android headers, as
     # it enables support for the new hwcomposer v1+ APIs in the plugin
