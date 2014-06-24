@@ -49,6 +49,38 @@
 // libhybris access to the native hwcomposer window
 #include <hwcomposer_window.h>
 
+// Helper class that takes care of waiting on and closing a set
+// of file descriptors
+class RetireFencePool {
+public:
+    RetireFencePool()
+        : m_fds()
+    {
+    }
+
+    ~RetireFencePool()
+    {
+        for (auto fd: m_fds) {
+            fprintf(stderr, "Waiting and closing retire fence fd: %d\n", fd);
+            sync_wait(fd, -1);
+            close(fd);
+        }
+    }
+
+    void consume(int &fd)
+    {
+        if (fd != -1) {
+            m_fds.push_back(fd);
+            fd = -1;
+        }
+    }
+
+private:
+    std::vector<int> m_fds;
+};
+
+class HwComposerContent_v11;
+
 class HwComposerBackend_v11 : public HwComposerBackend {
 public:
     HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
@@ -61,15 +93,17 @@ public:
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
 
+    // Present method that does the buffer swapping, returns the releaseFenceFd
+    int present(RetireFencePool *pool, buffer_handle_t handle, int acquireFenceFd);
+
 private:
     hwc_composer_device_1_t *hwc_device;
     HWComposerNativeWindow *hwc_win;
-    hwc_display_contents_1_t *hwc_list;
-    hwc_display_contents_1_t **hwc_mList;
-    int oldretire;
-    int oldrelease;
-    int oldrelease2;
     int num_displays;
+    int width;
+    int height;
+    HwComposerContent_v11 *content;
+    bool display_sleeping;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
