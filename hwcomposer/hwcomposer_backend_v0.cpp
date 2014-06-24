@@ -38,7 +38,7 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-
+#ifdef HWC_DEVICE_API_VERSION_0_1
 #include "hwcomposer_backend_v0.h"
 
 
@@ -118,3 +118,4 @@ HwComposerBackend_v0::refreshRate()
     qDebug("VSync: %dns, %ffps", vsyncVal, fps);
     return fps;
 }
+#endif

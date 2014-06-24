@@ -40,7 +40,9 @@
 ****************************************************************************/
 
 #include "hwcomposer_backend.h"
+#ifdef HWC_DEVICE_API_VERSION_0_1
 #include "hwcomposer_backend_v0.h"
+#endif
 #include "hwcomposer_backend_v10.h"
 #include "hwcomposer_backend_v11.h"
 
@@ -97,6 +99,7 @@ HwComposerBackend::create()
     fprintf(stderr, " * Module: %p\n", hwc_device->module);
     fprintf(stderr, "== hwcomposer device ==\n");
 
+#ifdef HWC_DEVICE_API_VERSION_0_1
     // Special-case for old hw adaptations that have the version encoded in
     // legacy format, we have to check hwc_device->version directly, because
     // the constants are actually encoded in the old format
@@ -105,14 +108,17 @@ HwComposerBackend::create()
         (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
         return new HwComposerBackend_v0(hwc_module, hwc_device);
     }
+#endif
 
     // Determine which backend we use based on the supported module API version
     switch (version) {
+#ifdef HWC_DEVICE_API_VERSION_0_1
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
             return new HwComposerBackend_v0(hwc_module, hwc_device);
             break;
+#endif
 #ifdef HWC_DEVICE_API_VERSION_1_0
         case HWC_DEVICE_API_VERSION_1_0:
             return new HwComposerBackend_v10(hwc_module, hwc_device);
