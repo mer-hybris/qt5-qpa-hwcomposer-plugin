@@ -143,7 +143,6 @@ HwComposerBackend_v11::createWindow(int width, int height)
     HWC_PLUGIN_EXPECT_NULL(hwc_list);
     HWC_PLUGIN_EXPECT_NULL(hwc_mList);
 
-
     size_t neededsize = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
     hwc_list = (hwc_display_contents_1_t *) malloc(neededsize);
     hwc_mList = (hwc_display_contents_1_t **) malloc(num_displays * sizeof(hwc_display_contents_1_t *));
@@ -164,11 +163,20 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->transform = 0;
     layer->blending = HWC_BLENDING_NONE;
     layer->sourceCrop = r;
+#ifdef HWC_DEVICE_API_VERSION_1_3
+    layer->sourceCropf.top = 0.0f;
+    layer->sourceCropf.left = 0.0f;
+    layer->sourceCropf.bottom = (float) height;
+    layer->sourceCropf.right = (float) width;
+#endif
     layer->displayFrame = r;
     layer->visibleRegionScreen.numRects = 1;
     layer->visibleRegionScreen.rects = &layer->displayFrame;
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
+#ifdef HWC_DEVICE_API_VERSION_1_2
+    layer->planeAlpha = 0xff;
+#endif
 
     layer = &hwc_list->hwLayers[1];
     memset(layer, 0, sizeof(hwc_layer_1_t));
@@ -179,11 +187,20 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->transform = 0;
     layer->blending = HWC_BLENDING_NONE;
     layer->sourceCrop = r;
+#ifdef HWC_DEVICE_API_VERSION_1_3
+    layer->sourceCropf.top = 0.0f;
+    layer->sourceCropf.left = 0.0f;
+    layer->sourceCropf.bottom = (float) height;
+    layer->sourceCropf.right = (float) width;
+#endif
     layer->displayFrame = r;
     layer->visibleRegionScreen.numRects = 1;
     layer->visibleRegionScreen.rects = &layer->displayFrame;
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
+#ifdef HWC_DEVICE_API_VERSION_1_2
+    layer->planeAlpha = 0xff;
+#endif
 
     hwc_list->retireFenceFd = -1;
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
@@ -208,7 +225,7 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
     // TODO: Wait for vsync?
 
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc_win);
-    
+
     eglSwapBuffers(display, surface);
 }
 
