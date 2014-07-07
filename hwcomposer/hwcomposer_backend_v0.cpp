@@ -38,8 +38,8 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-#ifdef HWC_DEVICE_API_VERSION_0_1
 #include "hwcomposer_backend_v0.h"
+#ifdef HWC_DEVICE_API_VERSION_0_1
 
 
 HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module, hw_device_t *hw_device)
