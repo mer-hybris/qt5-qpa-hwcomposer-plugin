@@ -39,6 +39,8 @@
 **
 ****************************************************************************/
 
+#include <android/android-version.h>
+
 #include "hwcomposer_backend_v11.h"
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
@@ -174,7 +176,7 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->visibleRegionScreen.rects = &layer->displayFrame;
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
-#ifdef HWC_DEVICE_API_VERSION_1_2
+#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3)
     layer->planeAlpha = 0xff;
 #endif
 
@@ -198,7 +200,7 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->visibleRegionScreen.rects = &layer->displayFrame;
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
-#ifdef HWC_DEVICE_API_VERSION_1_2
+#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3)
     layer->planeAlpha = 0xff;
 #endif
 
