@@ -70,8 +70,8 @@ bool QEglFSContext::makeCurrent(QPlatformSurface *surface)
                 swapInterval = 1;
         }
         eglSwapInterval(eglDisplay(), swapInterval);
-
     }
+    return current;
 }
 
 EGLSurface QEglFSContext::eglSurfaceForPlatformSurface(QPlatformSurface *surface)
