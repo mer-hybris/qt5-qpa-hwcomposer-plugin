@@ -62,6 +62,7 @@ public:
 private:
     HwComposerContext *m_hwc;
     QEglFSPageFlipper *m_pageFlipper;
+    bool m_swapIntervalConfigured;
 };
 
 QT_END_NAMESPACE
