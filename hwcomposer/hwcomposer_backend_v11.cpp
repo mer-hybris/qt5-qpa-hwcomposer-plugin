@@ -39,7 +39,7 @@
 **
 ****************************************************************************/
 
-#include <android/android-version.h>
+#include <android-version.h>
 
 #include "hwcomposer_backend_v11.h"
 
