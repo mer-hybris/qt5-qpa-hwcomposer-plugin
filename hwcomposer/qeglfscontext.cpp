@@ -69,7 +69,10 @@ bool QEglFSContext::makeCurrent(QPlatformSurface *surface)
             if (!ok)
                 swapInterval = 1;
         }
-        eglSwapInterval(eglDisplay(), swapInterval);
+        if (eglSwapInterval(eglDisplay(), swapInterval) != EGL_TRUE) {
+            // Reset and try again later if we couldn't set the swap interval
+            m_swapIntervalConfigured = false;
+        }
     }
 
     return current;
