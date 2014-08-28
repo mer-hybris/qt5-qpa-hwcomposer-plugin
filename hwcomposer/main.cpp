@@ -47,11 +47,8 @@ QT_BEGIN_NAMESPACE
 class QEglFSIntegrationPlugin : public QPlatformIntegrationPlugin
 {
     Q_OBJECT
-#if QT_VERSION < QT_VERSION_CHECK(5, 2, 0)
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.1" FILE "hwcomposer.json")
-#else
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.2" FILE "hwcomposer.json")
-#endif
+    Q_PLUGIN_METADATA(IID QPlatformIntegrationFactoryInterface_iid FILE "hwcomposer.json")
+
 public:
     QPlatformIntegration *create(const QString&, const QStringList&);
 };
