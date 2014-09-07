@@ -46,7 +46,8 @@
 
 #ifdef HWC_DEVICE_API_VERSION_1_0
 
-#include <pthread.h>
+#include <QWaitCondition>
+#include <QMutex>
 
 class HwComposerBackend_v10 : public HwComposerBackend {
 public:
