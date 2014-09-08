@@ -47,6 +47,8 @@
 static QMutex vsync_mutex;
 static QWaitCondition vsync_cond;
 
+static bool vsync_printed = false;
+
 const char *
 comp_type_str(int32_t type)
 {
@@ -271,7 +273,10 @@ HwComposerBackend_v10::refreshRate()
     }
 
     float fps = (float)1000000000 / (float)vsyncVal;
-    qDebug("VSync: %dns, %ffps", vsyncVal, fps);
+    if (!vsync_printed) {
+        qDebug("VSync: %dns, %ffps", vsyncVal, fps);
+        vsync_printed = true;
+    }
     return fps;
 }
 
