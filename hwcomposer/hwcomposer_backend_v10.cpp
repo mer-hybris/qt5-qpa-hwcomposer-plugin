@@ -44,8 +44,10 @@
 #ifdef HWC_DEVICE_API_VERSION_1_0
 
 /* For vsync thread synchronization */
-static pthread_mutex_t vsync_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t vsync_cond = PTHREAD_COND_INITIALIZER;
+static QMutex vsync_mutex;
+static QWaitCondition vsync_cond;
+
+static float vsyncFPS = -1;
 
 const char *
 comp_type_str(int32_t type)
@@ -112,9 +114,9 @@ void
 hwcv10_proc_vsync(const struct hwc_procs* procs, int disp, int64_t timestamp)
 {
     //fprintf(stderr, "%s: procs=%x, disp=%d, timestamp=%.0f\n", __func__, procs, disp, (float)timestamp);
-    pthread_mutex_lock(&vsync_mutex);
-    pthread_cond_signal(&vsync_cond);
-    pthread_mutex_unlock(&vsync_mutex);
+    vsync_mutex.lock();
+    vsync_cond.wakeOne();
+    vsync_mutex.unlock();
 }
 
 void
@@ -217,9 +219,10 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
     HWC_PLUGIN_ASSERT_ZERO(!(hwc_list->retireFenceFd == -1));
 
     // Wait for vsync before posting new frame
-    pthread_mutex_lock(&vsync_mutex);
-    pthread_cond_wait(&vsync_cond, &vsync_mutex);
-    pthread_mutex_unlock(&vsync_mutex);
+    // or force swap if exceeding the vsync timeframe
+    vsync_mutex.lock();
+    vsync_cond.wait(&vsync_mutex, 1000/vsyncFPS);
+    vsync_mutex.unlock();
 
     hwc_list->dpy = EGL_NO_DISPLAY;
     hwc_list->sur = EGL_NO_SURFACE;
@@ -261,17 +264,19 @@ HwComposerBackend_v10::sleepDisplay(bool sleep)
 float
 HwComposerBackend_v10::refreshRate()
 {
-    int vsyncVal = 0; // in ns
+    if(vsyncFPS == -1) {
+        int vsyncVal = 0; // in ns
 
-    int res = hwc_device->query(hwc_device, HWC_VSYNC_PERIOD, &vsyncVal);
-    if (res != 0 || vsyncVal == 0) {
-        qWarning() << "query(HWC_VSYNC_PERIOD) failed, assuming 60 Hz";
-        return 60.0;
+        int res = hwc_device->query(hwc_device, HWC_VSYNC_PERIOD, &vsyncVal);
+        if (res != 0 || vsyncVal == 0) {
+            qWarning() << "query(HWC_VSYNC_PERIOD) failed, assuming 60 Hz";
+            vsyncVal = 60.0;
+        }
+
+        vsyncFPS = (float)1000000000 / (float)vsyncVal;
+        qDebug("VSync: %dns, %ffps", vsyncVal, vsyncFPS);
     }
-
-    float fps = (float)1000000000 / (float)vsyncVal;
-    qDebug("VSync: %dns, %ffps", vsyncVal, fps);
-    return fps;
+    return vsyncFPS;
 }
 
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
