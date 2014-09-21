@@ -47,7 +47,7 @@
 static QMutex vsync_mutex;
 static QWaitCondition vsync_cond;
 
-static bool vsync_printed = false;
+static float vsyncFPS = -1;
 
 const char *
 comp_type_str(int32_t type)
@@ -221,7 +221,7 @@ HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
     // Wait for vsync before posting new frame
     // or force swap if exceeding the vsync timeframe
     vsync_mutex.lock();
-    vsync_cond.wait(&vsync_mutex, 1000/refreshRate());
+    vsync_cond.wait(&vsync_mutex, 1000/vsyncFPS);
     vsync_mutex.unlock();
 
     hwc_list->dpy = EGL_NO_DISPLAY;
@@ -264,20 +264,19 @@ HwComposerBackend_v10::sleepDisplay(bool sleep)
 float
 HwComposerBackend_v10::refreshRate()
 {
-    int vsyncVal = 0; // in ns
+    if(vsyncFPS == -1) {
+        int vsyncVal = 0; // in ns
 
-    int res = hwc_device->query(hwc_device, HWC_VSYNC_PERIOD, &vsyncVal);
-    if (res != 0 || vsyncVal == 0) {
-        qWarning() << "query(HWC_VSYNC_PERIOD) failed, assuming 60 Hz";
-        return 60.0;
-    }
+        int res = hwc_device->query(hwc_device, HWC_VSYNC_PERIOD, &vsyncVal);
+        if (res != 0 || vsyncVal == 0) {
+            qWarning() << "query(HWC_VSYNC_PERIOD) failed, assuming 60 Hz";
+            vsyncVal = 60.0;
+        }
 
-    float fps = (float)1000000000 / (float)vsyncVal;
-    if (!vsync_printed) {
-        qDebug("VSync: %dns, %ffps", vsyncVal, fps);
-        vsync_printed = true;
+        vsyncFPS = (float)1000000000 / (float)vsyncVal;
+        qDebug("VSync: %dns, %ffps", vsyncVal, vsyncFPS);
     }
-    return fps;
+    return vsyncFPS;
 }
 
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
