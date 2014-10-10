@@ -49,9 +49,25 @@
 
 QT_BEGIN_NAMESPACE
 
-QEglFSContext::QEglFSContext(HwComposerContext *hwc, QEglFSPageFlipper *pageFlipper, const QSurfaceFormat &format, QPlatformOpenGLContext *share,
-                             EGLDisplay display, EGLenum eglApi)
-    : QEGLPlatformContext(hwc->surfaceFormatFor(format), share, display, QEglFSIntegration::chooseConfig(display, hwc->surfaceFormatFor(format)), eglApi),
+QEglFSContext::QEglFSContext(
+                               HwComposerContext *hwc
+                             , QEglFSPageFlipper *pageFlipper
+                             , const QSurfaceFormat &format
+                             , QPlatformOpenGLContext *share
+                             , EGLDisplay display
+#if QT_VERSION < QT_VERSION_CHECK(5, 3, 0)
+                             , EGLenum eglApi
+#endif
+                            )
+    : QEGLPlatformContext(
+                          hwc->surfaceFormatFor(format)
+                        , share
+                        , display
+                        , QEglFSIntegration::chooseConfig(display, hwc->surfaceFormatFor(format))
+#if QT_VERSION < QT_VERSION_CHECK(5, 3, 0)
+                        , eglApi
+#endif
+      ),
     m_hwc(hwc), m_pageFlipper(pageFlipper), m_swapIntervalConfigured(false)
 {
 }
