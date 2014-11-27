@@ -54,6 +54,9 @@ public:
     HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
     virtual ~HwComposerBackend_v11();
 
+    virtual void invalidate();
+    virtual void vsync(int disp, int64_t timestamp);
+    virtual void hotplug(int disp, int connected);
     virtual EGLNativeDisplayType display();
     virtual EGLNativeWindowType createWindow(int width, int height);
     virtual void destroyWindow(EGLNativeWindowType window);

@@ -67,7 +67,7 @@ HwComposerBackend::create()
     // the hardware composer one. Therefor we rely on using the fbdev HYBRIS_EGLPLATFORM
     // here and use eglGetDisplay to initialize it.
     if (qEnvironmentVariableIsEmpty("QT_QPA_NO_FRAMEBUFFER_FIRST")) {
-	    eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	    eglInitialize(eglGetDisplay(EGL_DEFAULT_DISPLAY), NULL, NULL);
     }
 
     // Open hardware composer

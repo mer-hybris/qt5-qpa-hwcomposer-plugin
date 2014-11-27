@@ -91,10 +91,57 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     setFenceBufferFd(buffer, fblayer->releaseFenceFd);
 
     if (oldretire != -1)
-    {   
+    {
         sync_wait(oldretire, -1);
         close(oldretire);
     }
+}
+
+static const uint32_t DISPLAY_ATTRIBUTES[] = {
+    HWC_DISPLAY_VSYNC_PERIOD,
+    HWC_DISPLAY_WIDTH,
+    HWC_DISPLAY_HEIGHT,
+    HWC_DISPLAY_DPI_X,
+    HWC_DISPLAY_DPI_Y,
+    HWC_DISPLAY_NO_ATTRIBUTE,
+};
+#define NUM_DISPLAY_ATTRIBUTES (sizeof(DISPLAY_ATTRIBUTES) / sizeof(DISPLAY_ATTRIBUTES)[0])
+
+struct callbacks : public hwc_procs_t {
+       // these are here to facilitate the transition when adding
+        //         // new callbacks (an implementation can check for NULL before
+        //                 // calling a new callback).
+                     void (*zero[4])(void);
+       HwComposerBackend_v11 *hwc;
+} hwc_callbacks;
+
+void hook_invalidate(const struct hwc_procs* procs) {
+     fprintf(stderr, "=== invalidate hook called\n");
+     reinterpret_cast<const struct callbacks *>(procs)->hwc->invalidate();
+}
+
+void hook_vsync(const struct hwc_procs* procs, int disp,
+        int64_t timestamp) {
+    fprintf(stderr, "=== vsync %i %i called\n", disp, timestamp);
+    reinterpret_cast<const struct callbacks *>(procs)->hwc->vsync(disp, timestamp);
+}
+
+void hook_hotplug(const struct hwc_procs* procs, int disp,
+        int connected) {
+    fprintf(stderr, "=== hotplug %i %i\n", disp, connected);
+    reinterpret_cast<const struct callbacks *>(procs)->hwc->hotplug(disp, connected);
+}
+
+void HwComposerBackend_v11::invalidate()
+{
+}
+
+void HwComposerBackend_v11::vsync(int disp, int64_t timestamp)
+{
+}
+
+void HwComposerBackend_v11::hotplug(int disp, int connected)
+{
 }
 
 HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays)
@@ -108,6 +155,31 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , oldrelease2(-1)
     , num_displays(num_displays)
 {
+    int disp = 0;
+
+    hwc_callbacks.invalidate = &hook_invalidate;
+    hwc_callbacks.vsync = &hook_vsync;
+    hwc_callbacks.hotplug = &hook_hotplug;
+
+    hwc_device->registerProcs(hwc_device, &hwc_callbacks);
+    hwc_device->eventControl(hwc_device, HWC_DISPLAY_PRIMARY, HWC_EVENT_VSYNC, 0);
+    for (disp = 0; disp < num_displays; disp++)
+    {
+
+	    uint32_t config;
+	    int32_t values[NUM_DISPLAY_ATTRIBUTES - 1];
+	    size_t numConfigs = 1;
+	    int err = hwc_device->getDisplayConfigs(hwc_device, disp, &config, &numConfigs);
+	    if (err != 0) {
+		 fprintf(stderr, "== disp %i offline\n", disp);
+	    }
+            err = hwc_device->getDisplayAttributes(hwc_device, disp, config, DISPLAY_ATTRIBUTES, values);
+	    if (err != 0)
+            {
+                  fprintf(stderr, "== disp %i unable to get attributes\n", disp);
+	    }
+    }
+
     sleepDisplay(false);
 }
 

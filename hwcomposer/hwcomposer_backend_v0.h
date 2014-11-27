@@ -43,8 +43,10 @@
 #define HWCOMPOSER_BACKEND_V0_H
 
 #include "hwcomposer_backend.h"
+#include "hwcomposer_backend_v0.h"
 
 
+#ifdef HWC_DEVICE_API_VERSION_0_1
 class HwComposerBackend_v0 : public HwComposerBackend {
 public:
     HwComposerBackend_v0(hw_module_t *hwc_module, hw_device_t *hw_device);
@@ -61,5 +63,6 @@ private:
     hwc_composer_device_t *hwc_device;
     hwc_layer_list_t *hwc_layer_list;
 };
+#endif
 
 #endif /* HWCOMPOSER_BACKEND_V0_H */
