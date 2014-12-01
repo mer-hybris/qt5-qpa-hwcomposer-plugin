@@ -117,19 +117,25 @@ struct callbacks : public hwc_procs_t {
 
 void hook_invalidate(const struct hwc_procs* procs) {
      fprintf(stderr, "=== invalidate hook called\n");
+#if 0
      reinterpret_cast<const struct callbacks *>(procs)->hwc->invalidate();
+#endif
 }
 
 void hook_vsync(const struct hwc_procs* procs, int disp,
         int64_t timestamp) {
     fprintf(stderr, "=== vsync %i %i called\n", disp, timestamp);
+#if 0
     reinterpret_cast<const struct callbacks *>(procs)->hwc->vsync(disp, timestamp);
+#endif
 }
 
 void hook_hotplug(const struct hwc_procs* procs, int disp,
         int connected) {
     fprintf(stderr, "=== hotplug %i %i\n", disp, connected);
+#if 0
     reinterpret_cast<const struct callbacks *>(procs)->hwc->hotplug(disp, connected);
+#endif
 }
 
 void HwComposerBackend_v11::invalidate()
@@ -160,6 +166,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     hwc_callbacks.invalidate = &hook_invalidate;
     hwc_callbacks.vsync = &hook_vsync;
     hwc_callbacks.hotplug = &hook_hotplug;
+    hwc_callbacks.hwc = this;
 
     hwc_device->registerProcs(hwc_device, &hwc_callbacks);
     hwc_device->eventControl(hwc_device, HWC_DISPLAY_PRIMARY, HWC_EVENT_VSYNC, 0);
