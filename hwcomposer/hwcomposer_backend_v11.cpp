@@ -42,6 +42,7 @@
 #include <android-version.h>
 
 #include "hwcomposer_backend_v11.h"
+#include <stdio.h>
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
@@ -78,17 +79,17 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 {
     int oldretire = mlist[0]->retireFenceFd;
     mlist[0]->retireFenceFd = -1;
-    fblayer->handle = buffer->handle;
-    fblayer->acquireFenceFd = getFenceBufferFd(buffer);
-    fblayer->releaseFenceFd = -1;
+    mlist[0]->numHwLayers = 1;
+    mlist[0]->hwLayers[0].compositionType = HWC_FRAMEBUFFER_TARGET;
+    mlist[0]->hwLayers[0].handle = buffer->handle;
+    mlist[0]->hwLayers[0].acquireFenceFd = getFenceBufferFd(buffer);
+    mlist[0]->hwLayers[0].releaseFenceFd = -1;
 
     int err = hwcdevice->prepare(hwcdevice, num_displays, mlist);
     HWC_PLUGIN_EXPECT_ZERO(err);
-
     err = hwcdevice->set(hwcdevice, num_displays, mlist);
     HWC_PLUGIN_EXPECT_ZERO(err);
-
-    setFenceBufferFd(buffer, fblayer->releaseFenceFd);
+    setFenceBufferFd(buffer, mlist[0]->hwLayers[0].releaseFenceFd);
 
     if (oldretire != -1)
     {
@@ -224,42 +225,18 @@ HwComposerBackend_v11::createWindow(int width, int height)
     HWC_PLUGIN_EXPECT_NULL(hwc_list);
     HWC_PLUGIN_EXPECT_NULL(hwc_mList);
 
-    size_t neededsize = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
+    size_t neededsize = sizeof(hwc_display_contents_1_t) + 1 * sizeof(hwc_layer_1_t);
     hwc_list = (hwc_display_contents_1_t *) malloc(neededsize);
     hwc_mList = (hwc_display_contents_1_t **) malloc(num_displays * sizeof(hwc_display_contents_1_t *));
     const hwc_rect_t r = { 0, 0, width, height };
 
-    for (int i = 0; i < num_displays; i++) {
-         hwc_mList[i] = hwc_list;
-    }
+    hwc_mList[0] = hwc_list;
+    for (int i = 1; i < num_displays; i++)
+	hwc_mList[i] = NULL;
 
     hwc_layer_1_t *layer = NULL;
 
     layer = &hwc_list->hwLayers[0];
-    memset(layer, 0, sizeof(hwc_layer_1_t));
-    layer->compositionType = HWC_FRAMEBUFFER;
-    layer->hints = 0;
-    layer->flags = 0;
-    layer->handle = 0;
-    layer->transform = 0;
-    layer->blending = HWC_BLENDING_NONE;
-    layer->sourceCrop = r;
-#ifdef HWC_DEVICE_API_VERSION_1_3
-    layer->sourceCropf.top = 0.0f;
-    layer->sourceCropf.left = 0.0f;
-    layer->sourceCropf.bottom = (float) height;
-    layer->sourceCropf.right = (float) width;
-#endif
-    layer->displayFrame = r;
-    layer->visibleRegionScreen.numRects = 1;
-    layer->visibleRegionScreen.rects = &layer->displayFrame;
-    layer->acquireFenceFd = -1;
-    layer->releaseFenceFd = -1;
-#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3)
-    layer->planeAlpha = 0xff;
-#endif
-
-    layer = &hwc_list->hwLayers[1];
     memset(layer, 0, sizeof(hwc_layer_1_t));
     layer->compositionType = HWC_FRAMEBUFFER_TARGET;
     layer->hints = 0;
@@ -285,10 +262,10 @@ HwComposerBackend_v11::createWindow(int width, int height)
 
     hwc_list->retireFenceFd = -1;
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
-    hwc_list->numHwLayers = 2;
+    hwc_list->numHwLayers = 1;
 
     hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888,
-            hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays);
+            hwc_device, hwc_mList, &hwc_list->hwLayers[0], num_displays);
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 
