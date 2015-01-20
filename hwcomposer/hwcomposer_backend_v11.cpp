@@ -272,9 +272,9 @@ HwComposerBackend_v11::createWindow(int width, int height)
 void
 HwComposerBackend_v11::destroyWindow(EGLNativeWindowType window)
 {
-    Q_UNUSED(window);
-
-    // FIXME: Implement (delete hwc_win + set it to NULL?)
+    Q_UNUSED(window); // avoid warning in release build without the assert..
+    Q_ASSERT((HWComposer *) static_cast<ANativeWindow *>((void *)window) == hwc_win);
+    hwc_win = 0;
 }
 
 void
