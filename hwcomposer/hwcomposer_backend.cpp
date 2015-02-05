@@ -46,6 +46,7 @@
 #include "hwcomposer_backend_v10.h"
 #include "hwcomposer_backend_v11.h"
 
+Q_LOGGING_CATEGORY(QPA_LOG_HWC, "qpa.hwc")
 
 HwComposerBackend::HwComposerBackend(hw_module_t *hwc_module)
     : hwc_module(hwc_module)

@@ -49,14 +49,14 @@
 // libhybris access to the native hwcomposer window
 #include <hwcomposer_window.h>
 
+class HWC11WindowSurface;
+class HWC11Thread;
+
 class HwComposerBackend_v11 : public HwComposerBackend {
 public:
     HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
     virtual ~HwComposerBackend_v11();
 
-    virtual void invalidate();
-    virtual void vsync(int disp, int64_t timestamp);
-    virtual void hotplug(int disp, int connected);
     virtual EGLNativeDisplayType display();
     virtual EGLNativeWindowType createWindow(int width, int height);
     virtual void destroyWindow(EGLNativeWindowType window);
@@ -65,14 +65,7 @@ public:
     virtual float refreshRate();
 
 private:
-    hwc_composer_device_1_t *hwc_device;
-    HWComposerNativeWindow *hwc_win;
-    hwc_display_contents_1_t *hwc_list;
-    hwc_display_contents_1_t **hwc_mList;
-    int oldretire;
-    int oldrelease;
-    int oldrelease2;
-    int num_displays;
+    HWC11Thread *m_thread;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
