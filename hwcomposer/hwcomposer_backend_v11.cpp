@@ -183,8 +183,6 @@ HwComposerBackend_v11::destroyWindow(EGLNativeWindowType window)
     m_thread->lock();
     m_thread->windowSurface = 0;
     m_thread->unlock();
-
-    delete (HWC11WindowSurface *) static_cast<ANativeWindow *>((void *)window);
 }
 
 void
