@@ -53,6 +53,10 @@
 #include <qdebug.h>
 #include <qloggingcategory.h>
 
+namespace HwcInterface {
+    class Compositor;
+}
+
 Q_DECLARE_LOGGING_CATEGORY(QPA_LOG_HWC)
 
 // Evaluate "x", if it doesn't return zero, print a warning
@@ -94,6 +98,8 @@ public:
     virtual void swap(EGLNativeDisplayType display, EGLSurface surface) = 0;
     virtual void sleepDisplay(bool sleep) = 0;
     virtual float refreshRate() = 0;
+
+    virtual HwcInterface::Compositor *hwcInterface() { return 0; }
 
 protected:
     HwComposerBackend(hw_module_t *hwc_module);

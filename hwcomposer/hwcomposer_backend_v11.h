@@ -49,10 +49,13 @@
 // libhybris access to the native hwcomposer window
 #include <hwcomposer_window.h>
 
+#include "hwcinterface.h"
+
 class HWC11WindowSurface;
 class HWC11Thread;
+class HWC11FdReleaseQueue;
 
-class HwComposerBackend_v11 : public HwComposerBackend {
+class HwComposerBackend_v11 : public HwComposerBackend, public HwcInterface::Compositor {
 public:
     HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
     virtual ~HwComposerBackend_v11();
@@ -64,8 +67,33 @@ public:
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
 
+    HwcInterface::Compositor *hwcInterface() Q_DECL_OVERRIDE { return this; }
+    void scheduleLayerList(HwcInterface::LayerList *list) Q_DECL_OVERRIDE;
+    const HwcInterface::LayerList *acceptedLayerList() const Q_DECL_OVERRIDE;
+    void swapLayerList(HwcInterface::LayerList *list) Q_DECL_OVERRIDE;
+    void setReleaseLayerListCallback(ReleaseLayerListCallback callback) { m_releaseLayerListCallback = callback; }
+    void setBufferAvailableCallback(BufferAvailableCallback callback, void *cbData) {
+        m_bufferAvailableCallback = callback;
+        m_bufferAvailableCallbackData = cbData;
+    }
+
+    void present(HWComposerNativeWindowBuffer *b);
+
 private:
+    friend class HWC11FdReleaseQueue;
+    friend class HWC11Thread;
+    inline bool waitForComposer() const { return m_layerListBuffers.size() > 0 || m_eglSurfaceBuffer; }
+
     HWC11Thread *m_thread;
+    HwcInterface::LayerList *m_scheduledLayerList;
+
+    ReleaseLayerListCallback m_releaseLayerListCallback;
+    BufferAvailableCallback m_bufferAvailableCallback;
+    void *m_bufferAvailableCallbackData;
+
+    HWComposerNativeWindowBuffer *m_eglSurfaceBuffer;
+    bool m_eglWithLayerList;
+    QVarLengthArray<void *, 8> m_layerListBuffers;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
