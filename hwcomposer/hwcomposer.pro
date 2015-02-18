@@ -27,6 +27,7 @@ HEADERS += hwcomposer_backend_v10.h
 SOURCES += hwcomposer_backend_v11.cpp
 HEADERS += hwcomposer_backend_v11.h
 
+HEADERS += hwcinterface.h
 
 QT += core-private compositor-private gui-private platformsupport-private
 

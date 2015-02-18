@@ -60,6 +60,10 @@ class QEglFSContext;
 class HwComposerScreenInfo;
 class HwComposerBackend;
 
+namespace HwcInterface {
+    class Compositor;
+}
+
 class HwComposerContext
 {
 public:
@@ -80,6 +84,8 @@ public:
 
     void sleepDisplay(bool sleep);
     qreal refreshRate() const;
+
+    HwcInterface::Compositor *hwcInterface() const;
 
 private:
     HwComposerScreenInfo *info;

@@ -128,7 +128,7 @@ QSize HwComposerContext::screenSize() const
 
 QSurfaceFormat HwComposerContext::surfaceFormatFor(const QSurfaceFormat &inputFormat) const
 {
-    QSurfaceFormat newFormat = inputFormat; 
+    QSurfaceFormat newFormat = inputFormat;
     if (screenDepth() == 16) {
         newFormat.setRedBufferSize(5);
         newFormat.setGreenBufferSize(6);
@@ -190,6 +190,11 @@ void HwComposerContext::sleepDisplay(bool sleep)
 qreal HwComposerContext::refreshRate() const
 {
     return fps;
+}
+
+HwcInterface::Compositor *HwComposerContext::hwcInterface() const
+{
+    return backend->hwcInterface();
 }
 
 QT_END_NAMESPACE

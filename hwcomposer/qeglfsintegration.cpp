@@ -44,6 +44,8 @@
 #include "qeglfswindow.h"
 #include "qeglfsbackingstore.h"
 
+#include "hwcinterface.h"
+
 #include <QtGui/private/qguiapplication_p.h>
 
 #include <QtPlatformSupport/private/qgenericunixfontdatabase_p.h>
@@ -197,8 +199,10 @@ void *QEglFSIntegration::nativeResourceForIntegration(const QByteArray &resource
         mHwc->sleepDisplay(true);
     } else if (lowerCaseResource == "displayon") {
         // Called from lipstick to turn on the display (src/homeapplication.cpp)
-	mHwc->sleepDisplay(false);
-    } 
+        mHwc->sleepDisplay(false);
+    } else if (lowerCaseResource == HWC_INTERFACE_STRING) {
+        return mHwc->hwcInterface();
+    }
 
     return NULL;
 }
