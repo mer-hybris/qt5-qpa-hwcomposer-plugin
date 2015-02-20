@@ -281,12 +281,12 @@ void HwComposerBackend_v11::scheduleLayerList(HwcInterface::LayerList *list)
     if (!m_bufferAvailableCallback)
         qFatal("BufferAvailableCallback has not been installed");
 
-    m_thread->layerListMutex.lock();
     for (int i=0; i<list->layerCount; ++i) {
         if (!list->layers[i].handle)
             qFatal("missing buffer handle for layer %d", i);
     }
 
+    m_thread->layerListMutex.lock();
     if (m_scheduledLayerList)
         m_releaseLayerListCallback(m_scheduledLayerList);
     m_scheduledLayerList = list;
@@ -612,13 +612,22 @@ void HWC11Thread::doComposition(hwc_display_contents_1_t *dc)
 
 void HWC11Thread::checkLayerList()
 {
+    // Fetch the scheduled layer list. We limit the locking period to the
+    // transactional getting of the layerlist only.
     layerListMutex.lock();
-
-    Q_ASSERT(backend->m_scheduledLayerList);
-    if (acceptedLayerList)
-        backend->m_releaseLayerListCallback(acceptedLayerList);
+    // In the case multiple checks were scheduled by the app, a previous event
+    // could have already checked the layerlist, so we can just abort here.
+    if (backend->m_scheduledLayerList == 0) {
+        layerListMutex.unlock();
+        return;
+    }
     HwcInterface::LayerList *layerList = backend->m_scheduledLayerList;
     backend->m_scheduledLayerList = 0;
+    layerListMutex.unlock();
+
+    if (acceptedLayerList)
+        backend->m_releaseLayerListCallback(acceptedLayerList);
+    acceptedLayerList = 0;
 
     int actualLayerCount = 1 + layerList->layerCount + (layerList->eglRenderingEnabled ? 1 : 0);
     int dcSize = sizeof(hwc_display_contents_1_t) + actualLayerCount * sizeof(hwc_layer_1_t);
@@ -703,10 +712,7 @@ void HWC11Thread::checkLayerList()
         }
     }
 
-
-
     if (accept) {
-
         // Flag the accepted ones as such
         for (int i=0; i<layerCount; ++i)
             layerList->layers[i].accepted = true;
@@ -733,9 +739,6 @@ void HWC11Thread::checkLayerList()
         backend->m_releaseLayerListCallback(layerList);
         Q_ASSERT(acceptedLayerList == 0);
     }
-
-
-    layerListMutex.unlock();
 }
 
 void HWC11Thread::syncAndCloseOldFences()
