@@ -606,6 +606,7 @@ void HWC11Thread::doComposition(hwc_display_contents_1_t *dc)
     if (QPA_LOG_HWC().isDebugEnabled())
         hwc11_dump_display_contents(dc);
 
+    syncAndCloseOldFences();
     if (dc->retireFenceFd != -1)
         close(dc->retireFenceFd);
 }
