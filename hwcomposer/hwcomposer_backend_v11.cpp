@@ -389,7 +389,7 @@ HWC11Thread::HWC11Thread(HwComposerBackend_v11 *b, hwc_composer_device_1_t *d)
 static void hwc11_populate_layer(hwc_layer_1_t *layer, const QRect &tr, const QRect &sr, buffer_handle_t handle, int32_t type)
 {
     layer->handle = handle;
-    layer->hints = HWC_GEOMETRY_CHANGED;
+    layer->hints = 0;
     layer->flags = 0;
     layer->compositionType = type;
     layer->blending = HWC_BLENDING_PREMULT;
@@ -423,7 +423,7 @@ static void hwc11_update_layer(hwc_layer_1_t *layer, int acqFd, buffer_handle_t 
     layer->handle = handle;
     layer->acquireFenceFd = acqFd;
     layer->releaseFenceFd = -1;
-    layer->hints = HWC_GEOMETRY_CHANGED;
+    layer->hints = 0;
 }
 
 void HWC11Thread::initialize()
@@ -487,6 +487,7 @@ void HWC11Thread::composeEglSurface()
 
     // HWC requires retireFenceFd to be unspecified on 'set'
     hwcEglSurfaceList->retireFenceFd = -1;
+    hwcEglSurfaceList->flags = HWC_GEOMETRY_CHANGED;
 
     doComposition(hwcEglSurfaceList);
 
