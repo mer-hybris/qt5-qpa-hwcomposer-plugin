@@ -436,7 +436,7 @@ void HWC11Thread::initialize()
     procs->hotplug = hwc11_callback_hotplug;
     procs->vsync = hwc11_callback_vsync;
     hwcDevice->registerProcs(hwcDevice, procs);
-    hwcDevice->eventControl(hwcDevice, 0, HWC_EVENT_VSYNC, 1);
+    hwcDevice->eventControl(hwcDevice, 0, HWC_EVENT_VSYNC, 0);
 
     int hwcEglSurfaceListSize = sizeof(hwc_display_contents_1_t) + sizeof(hwc_layer_1_t);
     hwcEglSurfaceList = (hwc_display_contents_1_t *) malloc(hwcEglSurfaceListSize);
