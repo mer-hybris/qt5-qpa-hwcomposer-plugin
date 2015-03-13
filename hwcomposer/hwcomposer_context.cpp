@@ -197,4 +197,9 @@ HwcInterface::Compositor *HwComposerContext::hwcInterface() const
     return backend->hwcInterface();
 }
 
+bool HwComposerContext::requestUpdate(QWindow *window)
+{
+    return backend->requestUpdate(window);
+}
+
 QT_END_NAMESPACE
