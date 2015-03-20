@@ -714,12 +714,14 @@ void HWC11Thread::composeAcceptedLayerList()
         // release fd and mark it as -1 so we don't send release event back
         // to app after composition...
         buffer_handle_t buffer = (buffer_handle_t) backend->m_layerListBuffers.at(i);
-        if (i < m_releaseFences.size() && m_releaseFences.at(i).buffer == buffer) {
-            int fd = m_releaseFences.at(i).fd;
-            if (fd != -1) {
-                qCDebug(QPA_LOG_HWC, "                                (HWCT)  - posting buffer=%p again, closing fd=%d", buffer, fd);
-                close(fd);
-                m_releaseFences[i].fd = -1;
+        for (int j=0; j<m_releaseFences.size(); ++j) {
+            if (m_releaseFences.at(j).buffer == buffer) {
+                int fd = m_releaseFences.at(i).fd;
+                if (fd != -1) {
+                    qCDebug(QPA_LOG_HWC, "                                (HWCT)  - posting buffer=%p again, closing fd=%d", buffer, fd);
+                    close(fd);
+                    m_releaseFences[i].fd = -1;
+                }
             }
         }
         hwc11_update_layer(&hwcLayerList->hwLayers[i], -1, buffer);
