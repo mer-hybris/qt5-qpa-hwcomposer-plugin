@@ -82,6 +82,7 @@ private:
 };
 
 static QEvent::Type HWC11_VSYNC_EVENT = (QEvent::Type)(QEvent::User+1);
+static QEvent::Type HWC11_INVALIDATE_EVENT = (QEvent::Type)(QEvent::User+2);
 
 class HWC11Thread : public QThread, public hwc_procs
 {
@@ -92,6 +93,7 @@ public:
         DisplaySleepAction,
         DisplayWakeAction,
         CheckLayerListAction,
+        ResetLayerListAction,
         EglSurfaceCompositionAction,
         LayerListCompositionAction,
         ActivateVSyncCallbackAction,
@@ -171,6 +173,8 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , m_releaseLayerListCallback(0)
     , m_bufferAvailableCallback(0)
     , m_bufferAvailableCallbackData(0)
+    , m_invalidateCallback(0)
+    , m_invalidateCallbackData(0)
     , m_eglSurfaceBuffer(0)
     , m_eglWithLayerList(false)
     , m_vsyncCountDown(0)
@@ -257,17 +261,22 @@ void HwComposerBackend_v11::present(HWComposerNativeWindowBuffer *b)
     m_thread->unlock();
 }
 
+void HwComposerBackend_v11::deliverUpdateRequests()
+{
+    QSystraceEvent systrace("graphics", "QPA/HWC::deliverUpdateRequest");
+    qCDebug(QPA_LOG_HWC, " - delivering update request, %d windows pending", m_windowsPendingUpdate.size());
+    QSet<QWindow *> toUpdate = m_windowsPendingUpdate;
+    m_windowsPendingUpdate.clear();
+    foreach (QWindow *w, toUpdate) {
+        QWindowPrivate *wd = (QWindowPrivate *) QWindowPrivate::get(w);
+        wd->deliverUpdateRequest();
+    }
+}
+
 void HwComposerBackend_v11::timerEvent(QTimerEvent *te)
 {
     if (te->timerId() == m_timeToUpdateTimer) {
-        QSystraceEvent systrace("graphics", "QPA/HWC::deliverUpdateRequest");
-        qCDebug(QPA_LOG_HWC, " - delivering update request, %d windows pending", m_windowsPendingUpdate.size());
-        QSet<QWindow *> toUpdate = m_windowsPendingUpdate;
-        m_windowsPendingUpdate.clear();
-        foreach (QWindow *w, toUpdate) {
-            QWindowPrivate *wd = (QWindowPrivate *) QWindowPrivate::get(w);
-            wd->deliverUpdateRequest();
-        }
+        deliverUpdateRequests();
         killTimer(m_timeToUpdateTimer);
         m_timeToUpdateTimer = 0;
     }
@@ -363,6 +372,12 @@ bool HwComposerBackend_v11::event(QEvent *e)
     if (e->type() == HWC11_VSYNC_EVENT) {
         onVSync();
         return true;
+    } else if (e->type() == HWC11_INVALIDATE_EVENT) {
+        m_swappingLayersOnly = 0;
+        stopVSyncCountdown();
+        m_invalidateCallback(m_invalidateCallbackData);
+        deliverUpdateRequests();
+        return true;
     }
     return QObject::event(e);
 }
@@ -430,17 +445,25 @@ void HwComposerBackend_v11::scheduleLayerList(HwcInterface::LayerList *list)
         qFatal("ReleaseLayerListCallback has not been installed");
     if (!m_bufferAvailableCallback)
         qFatal("BufferAvailableCallback has not been installed");
-
-    for (int i=0; i<list->layerCount; ++i) {
-        if (!list->layers[i].handle)
-            qFatal("missing buffer handle for layer %d", i);
-    }
+    if (!m_invalidateCallback)
+        qFatal("InvalidateCallback has not been installed");
 
     m_thread->layerListMutex.lock();
+
     if (m_scheduledLayerList)
         m_releaseLayerListCallback(m_scheduledLayerList);
-    m_scheduledLayerList = list;
-    m_thread->post(HWC11Thread::CheckLayerListAction);
+
+    if (!list) {
+        m_scheduledLayerList = 0;
+        m_thread->post(HWC11Thread::ResetLayerListAction);
+    } else {
+        for (int i=0; i<list->layerCount; ++i) {
+            if (!list->layers[i].handle)
+                qFatal("missing buffer handle for layer %d", i);
+        }
+        m_scheduledLayerList = list;
+        m_thread->post(HWC11Thread::CheckLayerListAction);
+    }
     m_thread->layerListMutex.unlock();
 }
 
@@ -530,10 +553,12 @@ static void hwc11_callback_vsync(const struct hwc_procs *procs, int, int64_t)
     QCoreApplication::postEvent(thread->backend, new QEvent(HWC11_VSYNC_EVENT));
 }
 
-static void hwc11_callback_invalidate(const struct hwc_procs *)
+static void hwc11_callback_invalidate(const struct hwc_procs *procs)
 {
     QSystraceEvent systrace("graphics", "QPA/HWC::invalidate-callback");
     qCDebug(QPA_LOG_HWC, "callback_invalidate");
+    const HWC11Thread *thread = static_cast<const HWC11Thread *>(procs);
+    QCoreApplication::postEvent(thread->backend, new QEvent(HWC11_INVALIDATE_EVENT));
 }
 
 static void hwc11_callback_hotplug(const struct hwc_procs *, int, int)
@@ -689,7 +714,11 @@ void HWC11Thread::composeAcceptedLayerList()
         return;
     }
 
-    Q_ASSERT(acceptedLayerList);
+    if (!acceptedLayerList) {
+        qCDebug(QPA_LOG_HWC, "                                (HWCT)  - layer list has been reset, aborting");
+        unlock();
+        return;
+    }
 
     // Required by 'set'
     hwcLayerList->retireFenceFd = -1;
@@ -964,6 +993,12 @@ bool HWC11Thread::event(QEvent *e)
     case CheckLayerListAction:
         qCDebug(QPA_LOG_HWC, "                                (HWCT) action: check layer list");
         checkLayerList();
+        break;
+    case ResetLayerListAction:
+        qCDebug(QPA_LOG_HWC, "                                (HWCT) action: reset layer list");
+        if (acceptedLayerList)
+            backend->m_releaseLayerListCallback(acceptedLayerList);
+        acceptedLayerList = 0;
         break;
     case LayerListCompositionAction:
         qCDebug(QPA_LOG_HWC, "                                (HWCT) action: layer list composition");
