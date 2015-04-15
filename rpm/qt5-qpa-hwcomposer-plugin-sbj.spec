@@ -10,7 +10,6 @@ Source1:    README
 Source2:    precheckin.sh
 Source3:    qt5-qpa-hwcomposer-plugin.spec.in
 BuildRequires:  pkgconfig(Qt5Core)
-BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5PlatformSupport)
 BuildRequires:  pkgconfig(egl)
@@ -31,6 +30,11 @@ BuildRequires:  pkgconfig(mtdev)
 # Commented out for now to not break downgrades
 #Obsoletes: qt5-eglfs-qcom-hwcomposer-plugin <= 5.1.0+git15
 #Provides: qt5-eglfs-qcom-hwcomposer-plugin > 5.1.0+git15
+
+# We need this specific version or later due to the introduction of QPlatformWindow::requestUpdate()
+BuildRequires:  qt5-qtgui-devel >= 5.2.1+git20
+Requires: qt5-qtgui >= 5.2.1+git20
+
 
 %description
 This package contains a Qt 5 QPA plugin using libhybris' Droid
