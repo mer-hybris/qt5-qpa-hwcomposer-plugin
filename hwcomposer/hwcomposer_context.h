@@ -87,6 +87,8 @@ public:
 
     HwcInterface::Compositor *hwcInterface() const;
 
+    bool requestUpdate(QWindow *window);
+
 private:
     HwComposerScreenInfo *info;
     HwComposerBackend *backend;

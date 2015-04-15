@@ -51,11 +51,13 @@
 
 #include "hwcinterface.h"
 
+class QWindow;
+
 class HWC11WindowSurface;
 class HWC11Thread;
 class HWC11FdReleaseQueue;
 
-class HwComposerBackend_v11 : public HwComposerBackend, public HwcInterface::Compositor {
+class HwComposerBackend_v11 : public QObject, public HwComposerBackend, public HwcInterface::Compositor {
 public:
     HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
     virtual ~HwComposerBackend_v11();
@@ -76,13 +78,27 @@ public:
         m_bufferAvailableCallback = callback;
         m_bufferAvailableCallbackData = cbData;
     }
+    void setInvalidateCallback(InvalidateCallback callback, void *data) {
+        m_invalidateCallback = callback;
+        m_invalidateCallbackData = data;
+    }
 
     void present(HWComposerNativeWindowBuffer *b);
+
+    bool requestUpdate(QWindow *window);
+    void onVSync();
+
+protected:
+    void timerEvent(QTimerEvent *te);
+    bool event(QEvent *e);
 
 private:
     friend class HWC11FdReleaseQueue;
     friend class HWC11Thread;
     inline bool waitForComposer() const { return m_layerListBuffers.size() > 0 || m_eglSurfaceBuffer; }
+    void startVSyncCountdown();
+    void stopVSyncCountdown();
+    void deliverUpdateRequests();
 
     HWC11Thread *m_thread;
     HwcInterface::LayerList *m_scheduledLayerList;
@@ -90,10 +106,18 @@ private:
     ReleaseLayerListCallback m_releaseLayerListCallback;
     BufferAvailableCallback m_bufferAvailableCallback;
     void *m_bufferAvailableCallbackData;
+    InvalidateCallback m_invalidateCallback;
+    void *m_invalidateCallbackData;
 
     HWComposerNativeWindowBuffer *m_eglSurfaceBuffer;
     bool m_eglWithLayerList;
     QVarLengthArray<void *, 8> m_layerListBuffers;
+
+    QSet<QWindow *> m_windowsPendingUpdate;
+    int m_vsyncCountDown;
+    int m_timeToUpdateTimer;
+
+    QAtomicInt m_swappingLayersOnly;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */

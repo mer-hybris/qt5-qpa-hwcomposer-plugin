@@ -53,6 +53,8 @@
 #include <qdebug.h>
 #include <qloggingcategory.h>
 
+class QWindow;
+
 namespace HwcInterface {
     class Compositor;
 }
@@ -100,6 +102,7 @@ public:
     virtual float refreshRate() = 0;
 
     virtual HwcInterface::Compositor *hwcInterface() { return 0; }
+    virtual bool requestUpdate(QWindow *window) { return false; }
 
 protected:
     HwComposerBackend(hw_module_t *hwc_module);

@@ -7,7 +7,6 @@ License:    LGPLv2.1 with exception or GPLv3
 URL:        http://github.com/mer-hybris/qt5-qpa-hwcomposer-plugin
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
-BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5PlatformSupport)
 BuildRequires:  pkgconfig(egl)
@@ -26,6 +25,8 @@ BuildRequires:  wayland-devel
 BuildRequires:  pkgconfig(udev)
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(mtdev)
+BuildRequires:  qt5-qtgui-devel >= 5.2.1+git20
+Requires:       qt5-qtgui >= 5.2.1+git20
 
 %description
 This package contains a Qt 5 QPA plugin using libhybris' Droid

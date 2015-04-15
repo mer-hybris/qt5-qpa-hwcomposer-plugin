@@ -53,6 +53,9 @@
 #include <QSize>
 #include <QRect>
 
+#include <private/qwindow_p.h>
+#include <private/qsystrace_p.h>
+
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
 class HWC11Thread;
@@ -78,8 +81,10 @@ private:
     HwComposerBackend_v11 *backend;
 };
 
+static QEvent::Type HWC11_VSYNC_EVENT = (QEvent::Type)(QEvent::User+1);
+static QEvent::Type HWC11_INVALIDATE_EVENT = (QEvent::Type)(QEvent::User+2);
 
-class HWC11Thread : public QThread
+class HWC11Thread : public QThread, public hwc_procs
 {
 public:
     enum Action {
@@ -88,8 +93,11 @@ public:
         DisplaySleepAction,
         DisplayWakeAction,
         CheckLayerListAction,
+        ResetLayerListAction,
         EglSurfaceCompositionAction,
         LayerListCompositionAction,
+        ActivateVSyncCallbackAction,
+        DeactivateVSyncCallbackAction
     };
 
     HWC11Thread(HwComposerBackend_v11 *backend, hwc_composer_device_1_t *d);
@@ -165,8 +173,14 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , m_releaseLayerListCallback(0)
     , m_bufferAvailableCallback(0)
     , m_bufferAvailableCallbackData(0)
+    , m_invalidateCallback(0)
+    , m_invalidateCallbackData(0)
     , m_eglSurfaceBuffer(0)
     , m_eglWithLayerList(false)
+    , m_vsyncCountDown(0)
+    , m_timeToUpdateTimer(0)
+    , m_swappingLayersOnly(0)
+
 {
     Q_UNUSED(num_displays);
     m_thread = new HWC11Thread(this, (hwc_composer_device_1_t *) hw_device);
@@ -226,6 +240,7 @@ HwComposerBackend_v11::destroyWindow(EGLNativeWindowType window)
  */
 void HwComposerBackend_v11::present(HWComposerNativeWindowBuffer *b)
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::present");
     qCDebug(QPA_LOG_HWC, "present: %p (%p), current=%p, layerList=%d, thread=%p", b, b->handle, m_eglSurfaceBuffer, m_layerListBuffers.size(), QThread::currentThread());
     m_thread->lock();
     if (waitForComposer()) {
@@ -246,11 +261,148 @@ void HwComposerBackend_v11::present(HWComposerNativeWindowBuffer *b)
     m_thread->unlock();
 }
 
+void HwComposerBackend_v11::deliverUpdateRequests()
+{
+    QSystraceEvent systrace("graphics", "QPA/HWC::deliverUpdateRequest");
+    qCDebug(QPA_LOG_HWC, " - delivering update request, %d windows pending", m_windowsPendingUpdate.size());
+    QSet<QWindow *> toUpdate = m_windowsPendingUpdate;
+    m_windowsPendingUpdate.clear();
+    foreach (QWindow *w, toUpdate) {
+        QWindowPrivate *wd = (QWindowPrivate *) QWindowPrivate::get(w);
+        wd->deliverUpdateRequest();
+    }
+}
+
+void HwComposerBackend_v11::timerEvent(QTimerEvent *te)
+{
+    if (te->timerId() == m_timeToUpdateTimer) {
+        deliverUpdateRequests();
+        killTimer(m_timeToUpdateTimer);
+        m_timeToUpdateTimer = 0;
+    }
+}
+
+void HwComposerBackend_v11::startVSyncCountdown()
+{
+    if (m_vsyncCountDown <= 0) {
+        m_thread->post(HWC11Thread::ActivateVSyncCallbackAction);
+    }
+    m_vsyncCountDown = 60; // keep spinning for one second...
+}
+
+void HwComposerBackend_v11::stopVSyncCountdown()
+{
+    m_thread->post(HWC11Thread::DeactivateVSyncCallbackAction);
+    m_vsyncCountDown = 0;
+}
+
+
+/*
+    Forwarded from QPlatformWindow::requestUpdate() for the fullscreen window.
+
+    There are two ways to schedule updates. When combine HWC with EGL
+    rendering,  either by using only EGL or when using EGL + one or more
+    layers, we rely on the default mechanism. This will schedule a 5ms timer
+    (in QPlatformWindow::requestUpdate()) and trigger the renderloop in
+    declarative to go into the polishAndSync phase. The overall effect of this
+    is that the GUI thread starts as soon as possible and the render thread
+    starts as soon as possible resulting in that the GPU has as much time as
+    possible to complete a frame in time for the next vsync. When swapping
+    with EGL content, swap() and swapLayerList() will block only if there
+    already is a buffer pending, meaning that we block on a full buffer queue,
+    meaning that we render ahead of time. A side effect of this mode is that
+    layers will be retained in the HWC for at least 2 VSYNCs, which results in
+    that clients will have only a partial frame to render its buffer and
+    return it to the compositor. In practice this will clamp clients at 30fps,
+    which is "the best we can do" if we want the homescreen to stay responsive
+    at 60fps. This mode benefits from the fact that many clients are static so
+    the limitation is not always visible in practice.
+
+    The second mode of operation is when we are only swapping layers. In this
+    mode, we want to prioritize client applications and retain buffers for as
+    short a time as possible. We want to take buffers into use close to vsync,
+    then do a quick prepare&set and then make sure we release old buffers
+    once the composition is complete. It works like this:
+
+    RequestUpdate on Gui thread
+        -> start listening for vsync if we're not already
+    SwapLayerList on RenderThread
+        -> posts lists to HWC thread
+        -> waits for composition to complete.
+    Composition starts on HWC threaed
+    VSync happens
+        -> posts an event to GUI thread which in turn calls onVsync
+    onVSync() is called on GUI thread
+        -> starts a 5ms timer to call deliverUpdateRequest()
+    Composition is done on HWC thread
+        -> old buffers are released, app notified
+    SwapLayerList on RenderThread completes
+    Wayland buffers get released on GUI thread.
+    Timer to call deliverUpdateRequest triggers
+        -> new render pass is initiated.
+
+    In the transition point between rendering modes, we might end up with scheduling
+    render either a bit early or a bit late, but all in all, it shouldn't be too bad.
+
+    This whole problem stems from the fact that lipstick is both an OpenGL
+    homescreen and a compositor and surfaces are intermixed with homescreen
+    content, so we can't do "clean composition" (aka the second mode) like we
+    would have liked.
+ */
+bool HwComposerBackend_v11::requestUpdate(QWindow *window)
+{
+    Q_ASSERT(QThread::currentThread() == qApp->thread());
+    if (m_swappingLayersOnly.load()) {
+        QSystraceEvent systrace("graphics", "QPA/HWC::requestUpdate(layers-only)");
+        qCDebug(QPA_LOG_HWC) << "Requesting update after next vsync on" << window;
+        m_windowsPendingUpdate << window;
+        startVSyncCountdown();
+        return true;;
+    } else {
+        QSystraceEvent systrace("graphics", "QPA/HWC::requestUpdate(normal)");
+        if (m_vsyncCountDown > 0)
+            stopVSyncCountdown();
+        qCDebug(QPA_LOG_HWC) << "Requesting update in the near future on" << window;
+        return false;
+    }
+}
+
+bool HwComposerBackend_v11::event(QEvent *e)
+{
+    if (e->type() == HWC11_VSYNC_EVENT) {
+        onVSync();
+        return true;
+    } else if (e->type() == HWC11_INVALIDATE_EVENT) {
+        m_swappingLayersOnly = 0;
+        stopVSyncCountdown();
+        m_invalidateCallback(m_invalidateCallbackData);
+        deliverUpdateRequests();
+        return true;
+    }
+    return QObject::event(e);
+}
+
+void HwComposerBackend_v11::onVSync()
+{
+    QSystraceEvent systrace("graphics", "QPA/HWC::onVSync");
+    qCDebug(QPA_LOG_HWC, "VSync event delivered to GUI thread");
+    Q_ASSERT(QThread::currentThread() == qApp->thread());
+    if (!m_timeToUpdateTimer)
+        m_timeToUpdateTimer = startTimer(5);
+    if (m_vsyncCountDown > 0) {
+        --m_vsyncCountDown;
+        if (!m_vsyncCountDown)
+            stopVSyncCountdown();
+    }
+}
+
 void
 HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::swap");
     qCDebug(QPA_LOG_HWC, "eglSwapBuffers");
     m_eglWithLayerList = false;
+    m_swappingLayersOnly = 0;
     eglSwapBuffers(display, surface);
 }
 
@@ -258,7 +410,17 @@ void
 HwComposerBackend_v11::sleepDisplay(bool sleep)
 {
     qCDebug(QPA_LOG_HWC, "sleep: %d", sleep);
-    m_thread->post(sleep ? HWC11Thread::DisplaySleepAction : HWC11Thread::DisplayWakeAction);
+    if (sleep) {
+        // Stop vsync before shutting of the display to avoid HWC from getting
+        // into a bad state
+        stopVSyncCountdown();
+        m_thread->post(HWC11Thread::DisplaySleepAction);
+    } else {
+        // Start vsync after starting the display to avoid HWC getting into a
+        // bad state...
+        m_thread->post(HWC11Thread::DisplayWakeAction);
+        startVSyncCountdown();
+    }
 }
 
 float
@@ -274,23 +436,34 @@ HwComposerBackend_v11::refreshRate()
 
 void HwComposerBackend_v11::scheduleLayerList(HwcInterface::LayerList *list)
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::scheduleLayerList");
     qCDebug(QPA_LOG_HWC, "scheduleLayerList");
+
+    m_swappingLayersOnly = 0;
 
     if (!m_releaseLayerListCallback)
         qFatal("ReleaseLayerListCallback has not been installed");
     if (!m_bufferAvailableCallback)
         qFatal("BufferAvailableCallback has not been installed");
-
-    for (int i=0; i<list->layerCount; ++i) {
-        if (!list->layers[i].handle)
-            qFatal("missing buffer handle for layer %d", i);
-    }
+    if (!m_invalidateCallback)
+        qFatal("InvalidateCallback has not been installed");
 
     m_thread->layerListMutex.lock();
+
     if (m_scheduledLayerList)
         m_releaseLayerListCallback(m_scheduledLayerList);
-    m_scheduledLayerList = list;
-    m_thread->post(HWC11Thread::CheckLayerListAction);
+
+    if (!list) {
+        m_scheduledLayerList = 0;
+        m_thread->post(HWC11Thread::ResetLayerListAction);
+    } else {
+        for (int i=0; i<list->layerCount; ++i) {
+            if (!list->layers[i].handle)
+                qFatal("missing buffer handle for layer %d", i);
+        }
+        m_scheduledLayerList = list;
+        m_thread->post(HWC11Thread::CheckLayerListAction);
+    }
     m_thread->layerListMutex.unlock();
 }
 
@@ -306,12 +479,15 @@ void HwComposerBackend_v11::swapLayerList(HwcInterface::LayerList *list)
 {
     qCDebug(QPA_LOG_HWC, "swapLayerList, thread=%p", QThread::currentThread());
 
+    m_swappingLayersOnly = int(!list->eglRenderingEnabled);
+
     if (list != acceptedLayerList())
         qFatal("submitted list is not accepted list");
     if (m_scheduledLayerList)
         qFatal("submitted layerlist while there is a pending 'scheduledLayerList'");
 
     if (list->eglRenderingEnabled) {
+        QSystraceEvent systrace("graphics", "QPA/HWC::swapLayerList(EGL)");
         m_eglWithLayerList = true; // will be picked up in present() which is called from eglSwapBuffers()
         EGLDisplay display = eglGetCurrentDisplay();
         EGLSurface surface = eglGetCurrentSurface(EGL_DRAW);
@@ -319,6 +495,7 @@ void HwComposerBackend_v11::swapLayerList(HwcInterface::LayerList *list)
         eglSwapBuffers(display, surface);
 
     } else {
+        QSystraceEvent systrace("graphics", "QPA/HWC::swapLayerList(HWC)");
         qCDebug(QPA_LOG_HWC, " - swapping layers directly: m_eglSurfaceBuffer=%p, m_layerListBuffers.size()=%d", m_eglSurfaceBuffer, m_layerListBuffers.size());
         m_thread->lock();
         if (waitForComposer()) {
@@ -330,6 +507,16 @@ void HwComposerBackend_v11::swapLayerList(HwcInterface::LayerList *list)
         Q_ASSERT(m_layerListBuffers.size() == 0);
         hwc11_copy_layer_list(&m_layerListBuffers, list);
         m_thread->post(HWC11Thread::LayerListCompositionAction);
+
+        // When swapping pure layer lists we want to lock down the render
+        // thread until composition is done to avoid rendering ahead of time
+        // and to line up the swap phase more cleanly with vsync. See the
+        // comments in requestUpdate() above.
+        if (m_layerListBuffers.size()) {
+            qCDebug(QPA_LOG_HWC, " - waiting for swap to complete");
+            m_thread->wait();
+        }
+        qCDebug(QPA_LOG_HWC, " - swapLayerList is all done...");
         m_thread->unlock();
     }
 }
@@ -358,18 +545,25 @@ static void hwc11_dump_display_contents(hwc_display_contents_1_t *dc)
     }
 }
 
-static void hwc11_callback_vsync(const struct hwc_procs *, int, int64_t)
+static void hwc11_callback_vsync(const struct hwc_procs *procs, int, int64_t)
 {
-    qCDebug(QPA_LOG_HWC, " ********** callback_vsync **********");
+    QSystraceEvent systrace("graphics", "QPA/HWC::vsync-callback");
+    qCDebug(QPA_LOG_HWC, "callback_vsync");
+    const HWC11Thread *thread = static_cast<const HWC11Thread *>(procs);
+    QCoreApplication::postEvent(thread->backend, new QEvent(HWC11_VSYNC_EVENT));
 }
 
-static void hwc11_callback_invalidate(const struct hwc_procs *)
+static void hwc11_callback_invalidate(const struct hwc_procs *procs)
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::invalidate-callback");
     qCDebug(QPA_LOG_HWC, "callback_invalidate");
+    const HWC11Thread *thread = static_cast<const HWC11Thread *>(procs);
+    QCoreApplication::postEvent(thread->backend, new QEvent(HWC11_INVALIDATE_EVENT));
 }
 
 static void hwc11_callback_hotplug(const struct hwc_procs *, int, int)
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::hotplug-callback");
     qCDebug(QPA_LOG_HWC, "callback_hotplug");
 }
 
@@ -431,11 +625,10 @@ void HWC11Thread::initialize()
     qCDebug(QPA_LOG_HWC, "                                (HWCT) initialize");
     Q_ASSERT(size.width() > 1 && size.height() > 1);
 
-    hwc_procs *procs = new hwc_procs();
-    procs->invalidate = hwc11_callback_invalidate;
-    procs->hotplug = hwc11_callback_hotplug;
-    procs->vsync = hwc11_callback_vsync;
-    hwcDevice->registerProcs(hwcDevice, procs);
+    invalidate = hwc11_callback_invalidate;
+    hotplug = hwc11_callback_hotplug;
+    vsync = hwc11_callback_vsync;
+    hwcDevice->registerProcs(hwcDevice, static_cast<hwc_procs *>(this));
     hwcDevice->eventControl(hwcDevice, 0, HWC_EVENT_VSYNC, 0);
 
     int hwcEglSurfaceListSize = sizeof(hwc_display_contents_1_t) + sizeof(hwc_layer_1_t);
@@ -457,7 +650,7 @@ void HWC11Thread::cleanup()
     free(hwcLayerList);
     hwcLayerList = 0;
     acceptedLayerList = 0;
-     HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwcDevice));
+    HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwcDevice));
     hwcDevice = 0;
 }
 
@@ -470,6 +663,7 @@ static inline void hwc11_setBufferFenceFd(const HWComposerNativeWindowBuffer *b,
 
 void HWC11Thread::composeEglSurface()
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::composeEglSurface");
     qCDebug(QPA_LOG_HWC, "                                (HWCT) composeEglSurface");
     lock();
 
@@ -508,6 +702,7 @@ void HWC11Thread::composeEglSurface()
 
 void HWC11Thread::composeAcceptedLayerList()
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::composeLayerList");
     qCDebug(QPA_LOG_HWC, "                                (HWCT) composeAcceptedLayerList");
 
     lock();
@@ -519,7 +714,11 @@ void HWC11Thread::composeAcceptedLayerList()
         return;
     }
 
-    Q_ASSERT(acceptedLayerList);
+    if (!acceptedLayerList) {
+        qCDebug(QPA_LOG_HWC, "                                (HWCT)  - layer list has been reset, aborting");
+        unlock();
+        return;
+    }
 
     // Required by 'set'
     hwcLayerList->retireFenceFd = -1;
@@ -544,12 +743,14 @@ void HWC11Thread::composeAcceptedLayerList()
         // release fd and mark it as -1 so we don't send release event back
         // to app after composition...
         buffer_handle_t buffer = (buffer_handle_t) backend->m_layerListBuffers.at(i);
-        if (i < m_releaseFences.size() && m_releaseFences.at(i).buffer == buffer) {
-            int fd = m_releaseFences.at(i).fd;
-            if (fd != -1) {
-                qCDebug(QPA_LOG_HWC, "                                (HWCT)  - posting buffer=%p again, closing fd=%d", buffer, fd);
-                close(fd);
-                m_releaseFences[i].fd = -1;
+        for (int j=0; j<m_releaseFences.size(); ++j) {
+            if (m_releaseFences.at(j).buffer == buffer) {
+                int fd = m_releaseFences.at(i).fd;
+                if (fd != -1) {
+                    qCDebug(QPA_LOG_HWC, "                                (HWCT)  - posting buffer=%p again, closing fd=%d", buffer, fd);
+                    close(fd);
+                    m_releaseFences[i].fd = -1;
+                }
             }
         }
         hwc11_update_layer(&hwcLayerList->hwLayers[i], -1, buffer);
@@ -591,7 +792,10 @@ void HWC11Thread::doComposition(hwc_display_contents_1_t *dc)
     if (QPA_LOG_HWC().isDebugEnabled())
         hwc11_dump_display_contents(dc);
 
-    HWC_PLUGIN_EXPECT_ZERO(hwcDevice->prepare(hwcDevice, 1, &dc));
+    {
+        QSystraceEvent systrace("graphics", "QPA/HWC::prepare");
+        HWC_PLUGIN_EXPECT_ZERO(hwcDevice->prepare(hwcDevice, 1, &dc));
+    }
 
     if (QPA_LOG_HWC().isDebugEnabled()) {
         qCDebug(QPA_LOG_HWC, "                                (HWCT)  - after preprare:");
@@ -601,7 +805,11 @@ void HWC11Thread::doComposition(hwc_display_contents_1_t *dc)
     }
 
     qCDebug(QPA_LOG_HWC, "                                (HWCT)  - calling set");
-    HWC_PLUGIN_EXPECT_ZERO(hwcDevice->set(hwcDevice, 1, &dc));
+    // if (dc == hwcEglSurfaceList || acceptedLayerList && acceptedLayerList->eglRenderingEnabled)
+    {
+        QSystraceEvent systrace("graphics", "QPA/HWC::set");
+        HWC_PLUGIN_EXPECT_ZERO(hwcDevice->set(hwcDevice, 1, &dc));
+    }
     qCDebug(QPA_LOG_HWC, "                                (HWCT)  - set completed..");
 
     if (QPA_LOG_HWC().isDebugEnabled())
@@ -614,6 +822,7 @@ void HWC11Thread::doComposition(hwc_display_contents_1_t *dc)
 
 void HWC11Thread::checkLayerList()
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::checkLayerList");
     // Fetch the scheduled layer list. We limit the locking period to the
     // transactional getting of the layerlist only.
     layerListMutex.lock();
@@ -672,7 +881,7 @@ void HWC11Thread::checkLayerList()
         // Add the dummy fallback HWC_FRAMEBUFFER_TARGET layer. This one has
         // buffer handle 0 as we intend to never render to it and that means
         // 'set' is supposed to ignore it.
-        hwc11_populate_layer(&dc->hwLayers[dc->numHwLayers], fs, fs, lastEglSurfaceBuffer, HWC_FRAMEBUFFER_TARGET);
+        hwc11_populate_layer(&dc->hwLayers[dc->numHwLayers], fs, fs, 0, HWC_FRAMEBUFFER_TARGET);
         ++dc->numHwLayers;
 
         if (QPA_LOG_HWC().isDebugEnabled())
@@ -745,6 +954,7 @@ void HWC11Thread::checkLayerList()
 
 void HWC11Thread::syncAndCloseOldFences()
 {
+    QSystraceEvent systrace("graphics", "QPA/HWC::syncAndCloseOldFences");
     for (int i=0; i<m_releaseFences.size(); ++i) {
         const BufferAndFd &entry = m_releaseFences.at(i);
         if (entry.fd != -1) {
@@ -784,9 +994,23 @@ bool HWC11Thread::event(QEvent *e)
         qCDebug(QPA_LOG_HWC, "                                (HWCT) action: check layer list");
         checkLayerList();
         break;
+    case ResetLayerListAction:
+        qCDebug(QPA_LOG_HWC, "                                (HWCT) action: reset layer list");
+        if (acceptedLayerList)
+            backend->m_releaseLayerListCallback(acceptedLayerList);
+        acceptedLayerList = 0;
+        break;
     case LayerListCompositionAction:
         qCDebug(QPA_LOG_HWC, "                                (HWCT) action: layer list composition");
         composeAcceptedLayerList();
+        break;
+    case ActivateVSyncCallbackAction:
+        qCDebug(QPA_LOG_HWC, "                                (HWCT) action: activate vsync callback");
+        hwcDevice->eventControl(hwcDevice, 0, HWC_EVENT_VSYNC, 1);
+        break;
+    case DeactivateVSyncCallbackAction:
+        qCDebug(QPA_LOG_HWC, "                                (HWCT) action: deactivate vsync callback");
+        hwcDevice->eventControl(hwcDevice, 0, HWC_EVENT_VSYNC, 0);
         break;
     default:
         qCDebug(QPA_LOG_HWC, "                                (HWCT) unknown action: %d", e->type());
