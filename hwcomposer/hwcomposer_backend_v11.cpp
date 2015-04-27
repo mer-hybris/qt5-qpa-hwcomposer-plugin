@@ -375,7 +375,8 @@ bool HwComposerBackend_v11::event(QEvent *e)
     } else if (e->type() == HWC11_INVALIDATE_EVENT) {
         m_swappingLayersOnly = 0;
         stopVSyncCountdown();
-        m_invalidateCallback(m_invalidateCallbackData);
+        if (m_invalidateCallback)
+            m_invalidateCallback(m_invalidateCallbackData);
         deliverUpdateRequests();
         return true;
     }
