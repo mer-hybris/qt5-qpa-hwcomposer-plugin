@@ -746,11 +746,11 @@ void HWC11Thread::composeAcceptedLayerList()
         buffer_handle_t buffer = (buffer_handle_t) backend->m_layerListBuffers.at(i);
         for (int j=0; j<m_releaseFences.size(); ++j) {
             if (m_releaseFences.at(j).buffer == buffer) {
-                int fd = m_releaseFences.at(i).fd;
+                int fd = m_releaseFences.at(j).fd;
                 if (fd != -1) {
                     qCDebug(QPA_LOG_HWC, "                                (HWCT)  - posting buffer=%p again, closing fd=%d", buffer, fd);
                     close(fd);
-                    m_releaseFences[i].fd = -1;
+                    m_releaseFences[j].fd = -1;
                 }
             }
         }
