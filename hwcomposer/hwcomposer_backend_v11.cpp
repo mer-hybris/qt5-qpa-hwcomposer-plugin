@@ -798,6 +798,14 @@ void HWC11Thread::doComposition(hwc_display_contents_1_t *dc)
         HWC_PLUGIN_EXPECT_ZERO(hwcDevice->prepare(hwcDevice, 1, &dc));
     }
 
+    for (unsigned int i = 0; i<dc->numHwLayers; ++i) {
+        const hwc_layer_1_t &l = dc->hwLayers[i];
+        if (l.compositionType != HWC_OVERLAY && l.compositionType != HWC_FRAMEBUFFER_TARGET) {
+            qDebug("lipstick-hwc: layer #%d, (%d,%d - %d,%d)",
+                   i, l.displayFrame.left, l.displayFrame.top, l.displayFrame.right, l.displayFrame.bottom);
+        }
+    }
+
     if (QPA_LOG_HWC().isDebugEnabled()) {
         qCDebug(QPA_LOG_HWC, "                                (HWCT)  - after preprare:");
         for (unsigned int i = 0; i<dc->numHwLayers; ++i) {
