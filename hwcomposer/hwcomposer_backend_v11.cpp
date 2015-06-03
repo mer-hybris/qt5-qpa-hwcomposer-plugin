@@ -95,7 +95,8 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     err = hwcdevice->set(hwcdevice, num_displays, mlist);
     HWC_PLUGIN_EXPECT_ZERO(err);
 
-    setFenceBufferFd(buffer, fblayer->releaseFenceFd);
+    close(fblayer->releaseFenceFd);
+    setFenceBufferFd(buffer, -1);
 
     if (oldretire != -1)
     {   
