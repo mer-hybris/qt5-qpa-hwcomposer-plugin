@@ -99,7 +99,7 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 
     if (oldretire != -1)
     {   
-        sync_wait(oldretire, -1);
+        //sync_wait(oldretire, -1);
         close(oldretire);
     }
 }
