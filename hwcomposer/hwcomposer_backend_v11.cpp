@@ -79,7 +79,14 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     int oldretire = mlist[0]->retireFenceFd;
     mlist[0]->retireFenceFd = -1;
     fblayer->handle = buffer->handle;
-    fblayer->acquireFenceFd = getFenceBufferFd(buffer);
+    // tmp workaround for Nexus 4
+    //fblayer->acquireFenceFd = getFenceBufferFd(buffer);
+    fblayer->acquireFenceFd = -1;
+    int fbfd = getFenceBufferFd(buffer);
+    if (fbfd != -1) {
+        sync_wait(fbfd, -1),
+        close(fbfd);
+    }
     fblayer->releaseFenceFd = -1;
 
     int err = hwcdevice->prepare(hwcdevice, num_displays, mlist);
