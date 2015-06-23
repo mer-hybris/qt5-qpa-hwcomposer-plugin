@@ -185,6 +185,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     Q_UNUSED(num_displays);
     m_thread = new HWC11Thread(this, (hwc_composer_device_1_t *) hw_device);
     m_thread->moveToThread(m_thread);
+    m_thread->post(HWC11Thread::InitializeAction);
 }
 
 HwComposerBackend_v11::~HwComposerBackend_v11()
@@ -211,7 +212,6 @@ HwComposerBackend_v11::createWindow(int width, int height)
     HWC11WindowSurface *window = new HWC11WindowSurface(this, width, height, HAL_PIXEL_FORMAT_RGBA_8888);
     Q_ASSERT(!m_thread->isRunning());
     m_thread->size = QSize(width, height);
-    m_thread->post(HWC11Thread::InitializeAction);
     m_thread->start();
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(window);
 }
