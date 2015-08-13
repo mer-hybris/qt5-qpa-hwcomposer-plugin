@@ -44,6 +44,7 @@
 
 #include <sys/types.h>
 
+#include <android-config.h>
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
 
