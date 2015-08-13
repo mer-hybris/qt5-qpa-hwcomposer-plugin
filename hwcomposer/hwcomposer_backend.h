@@ -78,6 +78,19 @@
     { int res; if ((res = (x)) != 0) \
         qFatal("QPA-HWC: %s in %s returned %i", (#x), __func__, res); }
 
+static uint32_t interpreted_version(hw_device_t *hwc_device)
+{
+    uint32_t version = hwc_device->version;
+
+    if ((version & 0xffff0000) == 0) {
+        // Assume header version is always 1
+        uint32_t header_version = 1;
+
+        // Legacy version encoding
+        version = (version << 16) | header_version;
+    }
+    return version;
+}
 
 
 class HwComposerBackend {

@@ -85,14 +85,7 @@ HwComposerBackend::create()
     // Open hardware composer device
     HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
 
-    uint32_t version = hwc_device->version;
-    if ((version & 0xffff0000) == 0) {
-        // Assume header version is always 1
-        uint32_t header_version = 1;
-
-        // Legacy version encoding
-        version = (version << 16) | header_version;
-    }
+    uint32_t version = interpreted_version(hwc_device);
 
     fprintf(stderr, "== hwcomposer device ==\n");
     fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);

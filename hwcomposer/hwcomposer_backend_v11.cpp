@@ -108,6 +108,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , oldrelease2(-1)
     , num_displays(num_displays)
 {
+    hwc_version = interpreted_version(hw_device);
     sleepDisplay(false);
 }
 
@@ -240,9 +241,19 @@ void
 HwComposerBackend_v11::sleepDisplay(bool sleep)
 {
     if (sleep) {
-        HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 1));
+#ifdef HWC_DEVICE_API_VERSION_1_4
+        if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
+            HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_OFF));
+        } else
+#endif
+            HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 1));
     } else {
-        HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
+#ifdef HWC_DEVICE_API_VERSION_1_4
+        if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
+            HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_NORMAL));
+        } else
+#endif
+            HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 0));
 
         if (hwc_list) {
             hwc_list->flags |= HWC_GEOMETRY_CHANGED;
