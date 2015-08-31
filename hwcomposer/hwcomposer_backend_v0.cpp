@@ -38,6 +38,8 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
+#include <android-version.h>
+#if ANDROID_VERSION_MAJOR <= 4
 #include "hwcomposer_backend_v0.h"
 #ifdef HWC_DEVICE_API_VERSION_0_1
 
@@ -118,4 +120,5 @@ HwComposerBackend_v0::refreshRate()
     qDebug("VSync: %dns, %ffps", vsyncVal, fps);
     return fps;
 }
+#endif
 #endif
