@@ -126,22 +126,16 @@ HwComposerBackend::create()
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_1:
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
-            break;
 #ifdef HWC_DEVICE_API_VERSION_1_2
         case HWC_DEVICE_API_VERSION_1_2:
-            /* hwcomposer 1.2 and beyond have virtual displays however virtual displays are
-               only used in hwcomposer 1.2 */
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
-            break;
-
-#endif /* HWC_DEVICE_API_VERSION_1_2 */
+#endif
 #ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
-            /* Do not use virtual displays */
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_PHYSICAL_DISPLAY_TYPES);
+#endif
+            // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
+            // underrun/overruns happen
+            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
             break;
-#endif /* HWC_DEVICE_API_VERSION_1_3 */
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:
             fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",

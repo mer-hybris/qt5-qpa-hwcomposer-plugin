@@ -43,6 +43,7 @@
 #define HWCOMPOSER_BACKEND_H
 
 #include <sys/types.h>
+#include <sync/sync.h>
 
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>

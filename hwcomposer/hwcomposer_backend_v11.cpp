@@ -151,8 +151,11 @@ HwComposerBackend_v11::createWindow(int width, int height)
     const hwc_rect_t r = { 0, 0, width, height };
 
     for (int i = 0; i < num_displays; i++) {
-         hwc_mList[i] = hwc_list;
+         hwc_mList[i] = NULL;
     }
+    // Assign buffer only to the first item, otherwise you get tearing
+    // if passed the same to multiple places
+    hwc_mList[0] = hwc_list;
 
     hwc_layer_1_t *layer = NULL;
 
@@ -164,12 +167,13 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->handle = 0;
     layer->transform = 0;
     layer->blending = HWC_BLENDING_NONE;
-    layer->sourceCrop = r;
 #ifdef HWC_DEVICE_API_VERSION_1_3
     layer->sourceCropf.top = 0.0f;
     layer->sourceCropf.left = 0.0f;
     layer->sourceCropf.bottom = (float) height;
     layer->sourceCropf.right = (float) width;
+#else
+    layer->sourceCrop = r;
 #endif
     layer->displayFrame = r;
     layer->visibleRegionScreen.numRects = 1;
@@ -188,12 +192,13 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->handle = 0;
     layer->transform = 0;
     layer->blending = HWC_BLENDING_NONE;
-    layer->sourceCrop = r;
 #ifdef HWC_DEVICE_API_VERSION_1_3
     layer->sourceCropf.top = 0.0f;
     layer->sourceCropf.left = 0.0f;
     layer->sourceCropf.bottom = (float) height;
     layer->sourceCropf.right = (float) width;
+#else
+    layer->sourceCrop = r;
 #endif
     layer->displayFrame = r;
     layer->visibleRegionScreen.numRects = 1;
