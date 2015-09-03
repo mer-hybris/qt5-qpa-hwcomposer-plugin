@@ -132,6 +132,9 @@ HwComposerBackend::create()
 #ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
 #endif
+#ifdef HWC_DEVICE_API_VERSION_1_4
+        case HWC_DEVICE_API_VERSION_1_4:
+#endif
             // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
             // underrun/overruns happen
             return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
