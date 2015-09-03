@@ -85,14 +85,7 @@ HwComposerBackend::create()
     // Open hardware composer device
     HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
 
-    uint32_t version = hwc_device->version;
-    if ((version & 0xffff0000) == 0) {
-        // Assume header version is always 1
-        uint32_t header_version = 1;
-
-        // Legacy version encoding
-        version = (version << 16) | header_version;
-    }
+    uint32_t version = interpreted_version(hwc_device);
 
     fprintf(stderr, "== hwcomposer device ==\n");
     fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);
@@ -126,22 +119,19 @@ HwComposerBackend::create()
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
         case HWC_DEVICE_API_VERSION_1_1:
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
-            break;
 #ifdef HWC_DEVICE_API_VERSION_1_2
         case HWC_DEVICE_API_VERSION_1_2:
-            /* hwcomposer 1.2 and beyond have virtual displays however virtual displays are
-               only used in hwcomposer 1.2 */
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
-            break;
-
-#endif /* HWC_DEVICE_API_VERSION_1_2 */
+#endif
 #ifdef HWC_DEVICE_API_VERSION_1_3
         case HWC_DEVICE_API_VERSION_1_3:
-            /* Do not use virtual displays */
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_PHYSICAL_DISPLAY_TYPES);
+#endif
+#ifdef HWC_DEVICE_API_VERSION_1_4
+        case HWC_DEVICE_API_VERSION_1_4:
+#endif
+            // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
+            // underrun/overruns happen
+            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
             break;
-#endif /* HWC_DEVICE_API_VERSION_1_3 */
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:
             fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
