@@ -76,8 +76,6 @@ HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int for
 
 void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 {
-    int oldretire = mlist[0]->retireFenceFd;
-    mlist[0]->retireFenceFd = -1;
     fblayer->handle = buffer->handle;
     fblayer->acquireFenceFd = getFenceBufferFd(buffer);
     fblayer->releaseFenceFd = -1;
@@ -90,10 +88,9 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 
     setFenceBufferFd(buffer, fblayer->releaseFenceFd);
 
-    if (oldretire != -1)
-    {   
-        sync_wait(oldretire, -1);
-        close(oldretire);
+    if (mlist[0]->retireFenceFd != -1) {
+        close(mlist[0]->retireFenceFd);
+        mlist[0]->retireFenceFd = -1;
     }
 }
 
