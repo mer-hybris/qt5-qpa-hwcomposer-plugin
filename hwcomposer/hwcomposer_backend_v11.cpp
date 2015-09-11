@@ -100,9 +100,6 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , hwc_win(NULL)
     , hwc_list(NULL)
     , hwc_mList(NULL)
-    , oldretire(-1)
-    , oldrelease(-1)
-    , oldrelease2(-1)
     , num_displays(num_displays)
 {
     hwc_version = interpreted_version(hw_device);
@@ -178,7 +175,7 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->visibleRegionScreen.rects = &layer->displayFrame;
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
-#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3)
+#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3) || (ANDROID_VERSION_MAJOR >= 5)
     layer->planeAlpha = 0xff;
 #endif
 
@@ -203,7 +200,7 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->visibleRegionScreen.rects = &layer->displayFrame;
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
-#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3)
+#if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3) || (ANDROID_VERSION_MAJOR >= 5)
     layer->planeAlpha = 0xff;
 #endif
 
