@@ -100,9 +100,6 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , hwc_win(NULL)
     , hwc_list(NULL)
     , hwc_mList(NULL)
-    , oldretire(-1)
-    , oldrelease(-1)
-    , oldrelease2(-1)
     , num_displays(num_displays)
 {
     hwc_version = interpreted_version(hw_device);
