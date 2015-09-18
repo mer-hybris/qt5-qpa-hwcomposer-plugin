@@ -40,7 +40,6 @@
 ****************************************************************************/
 
 #include <android-version.h>
-
 #include "hwcomposer_backend_v11.h"
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
@@ -72,6 +71,8 @@ HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int for
     , mlist(mList)
     , num_displays(num_displays)
 {
+    int bufferCount = qBound(2, qgetenv("QPA_HWC_BUFFER_COUNT").toInt(), 8);
+    setBufferCount(bufferCount);
 }
 
 void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
@@ -176,7 +177,13 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->acquireFenceFd = -1;
     layer->releaseFenceFd = -1;
 #if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3) || (ANDROID_VERSION_MAJOR >= 5)
-    layer->planeAlpha = 0xff;
+    // We've observed that qualcomm chipsets enters into compositionType == 6
+    // (HWC_BLIT), an undocumented composition type which gives us rendering
+    // glitches and warnings in logcat. By setting the planarAlpha to non-
+    // opaque, we attempt to force the HWC into using HWC_FRAMEBUFFER for this
+    // layer so the HWC_FRAMEBUFFER_TARGET layer actually gets used.
+    bool tryToForceGLES = !qgetenv("QPA_HWC_FORCE_GLES").isEmpty();
+    layer->planeAlpha = tryToForceGLES ? 1 : 255;
 #endif
 
     layer = &hwc_list->hwLayers[1];
