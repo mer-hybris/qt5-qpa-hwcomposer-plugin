@@ -98,7 +98,6 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays)
     : HwComposerBackend(hwc_module)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
-    , hwc_win(NULL)
     , hwc_list(NULL)
     , hwc_mList(NULL)
     , num_displays(num_displays)
@@ -109,11 +108,6 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
 
 HwComposerBackend_v11::~HwComposerBackend_v11()
 {
-    // Destroy the window if it hasn't yet been destroyed
-    if (hwc_win != NULL) {
-        delete hwc_win;
-    }
-
     // Close the hwcomposer handle
     HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwc_device));
 
@@ -137,7 +131,6 @@ HwComposerBackend_v11::createWindow(int width, int height)
 {
     // We expect that we haven't created a window already, if we had, we
     // would leak stuff, and we want to avoid that for obvious reasons.
-    HWC_PLUGIN_EXPECT_NULL(hwc_win);
     HWC_PLUGIN_EXPECT_NULL(hwc_list);
     HWC_PLUGIN_EXPECT_NULL(hwc_mList);
 
@@ -215,8 +208,8 @@ HwComposerBackend_v11::createWindow(int width, int height)
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
     hwc_list->numHwLayers = 2;
 
-    hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888,
-            hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays);
+    HWComposer *hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888,
+                                         hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays);
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 
@@ -224,17 +217,12 @@ void
 HwComposerBackend_v11::destroyWindow(EGLNativeWindowType window)
 {
     Q_UNUSED(window);
-
-    // FIXME: Implement (delete hwc_win + set it to NULL?)
 }
 
 void
 HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
     // TODO: Wait for vsync?
-
-    HWC_PLUGIN_ASSERT_NOT_NULL(hwc_win);
-
     eglSwapBuffers(display, surface);
 }
 
