@@ -109,7 +109,8 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
 HwComposerBackend_v11::~HwComposerBackend_v11()
 {
     // Close the hwcomposer handle
-    HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwc_device));
+    if (!qgetenv("QPA_HWC_WORKAROUNDS").split(',').contains("no-close-hwc"))
+        HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwc_device));
 
     if (hwc_mList != NULL) {
         free(hwc_mList);
