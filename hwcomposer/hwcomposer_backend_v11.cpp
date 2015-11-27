@@ -208,6 +208,11 @@ HwComposerBackend_v11::createWindow(int width, int height)
     hwc_list->retireFenceFd = -1;
     hwc_list->flags = HWC_GEOMETRY_CHANGED;
     hwc_list->numHwLayers = 2;
+#ifdef HWC_DEVICE_API_VERSION_1_3
+    hwc_list->outbuf = 0;
+    hwc_list->outbufAcquireFenceFd = -1;
+#endif
+
 
     HWComposer *hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888,
                                          hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays);
