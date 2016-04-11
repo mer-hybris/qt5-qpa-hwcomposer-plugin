@@ -80,7 +80,7 @@ void QEglFSWindow::create()
 
     EGLDisplay display = (static_cast<QEglFSScreen *>(window()->screen()->handle()))->display();
     QSurfaceFormat platformFormat = m_hwc->surfaceFormatFor(window()->requestedFormat());
-    m_config = QEglFSIntegration::chooseConfig(display, platformFormat);
+    m_config = *(QEglFSIntegration::chooseConfig(display, platformFormat));
     m_format = q_glFormatFromConfig(display, m_config);
     resetSurface();
 }
