@@ -82,7 +82,7 @@ public:
     void *nativeResourceForContext(const QByteArray &resource, QOpenGLContext *context);
 
     QPlatformScreen *screen() const { return mScreen; }
-    static EGLConfig chooseConfig(EGLDisplay display, const QSurfaceFormat &format);
+    static EGLConfig* chooseConfig(EGLDisplay display, const QSurfaceFormat &format);
 
     EGLDisplay display() const { return mDisplay; }
 

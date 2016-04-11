@@ -63,7 +63,6 @@
 #include <qpa/qplatforminputcontextfactory_p.h>
 
 #include "qeglfscontext.h"
-#include "qeglfspageflipper.h"
 
 #include <EGL/egl.h>
 
@@ -150,7 +149,7 @@ QPlatformBackingStore *QEglFSIntegration::createPlatformBackingStore(QWindow *wi
 
 QPlatformOpenGLContext *QEglFSIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
-    return new QEglFSContext(mHwc, static_cast<QEglFSPageFlipper *>(mScreen->pageFlipper()), mHwc->surfaceFormatFor(context->format()), context->shareHandle(), mDisplay);
+    return new QEglFSContext(mHwc, mHwc->surfaceFormatFor(context->format()), context->shareHandle(), mDisplay);
 }
 
 QPlatformOffscreenSurface *QEglFSIntegration::createPlatformOffscreenSurface(QOffscreenSurface *surface) const
@@ -232,11 +231,13 @@ void *QEglFSIntegration::nativeResourceForContext(const QByteArray &resource, QO
     return 0;
 }
 
-EGLConfig QEglFSIntegration::chooseConfig(EGLDisplay display, const QSurfaceFormat &format)
+EGLConfig* QEglFSIntegration::chooseConfig(EGLDisplay display, const QSurfaceFormat &format)
 {
     QEglConfigChooser chooser(display);
     chooser.setSurfaceFormat(format);
-    return chooser.chooseConfig();
+    EGLConfig config = chooser.chooseConfig();
+
+    return &config;
 }
 
 QStringList QEglFSIntegration::themeNames() const
