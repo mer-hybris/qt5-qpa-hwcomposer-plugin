@@ -96,9 +96,6 @@ HwComposerContext::HwComposerContext()
 
 HwComposerContext::~HwComposerContext()
 {
-    // Turn display off
-    sleepDisplay(true);
-
     // Properly clean up hwcomposer backend
     HwComposerBackend::destroy(backend);
 
