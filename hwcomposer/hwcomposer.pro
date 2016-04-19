@@ -1,7 +1,7 @@
 TARGET = hwcomposer
 
 PLUGIN_TYPE = platforms
-PLUGIN_CLASS_NAME = QEglFSIntegrationPlugin
+PLUGIN_CLASS_NAME = QEglFShwcIntegrationPlugin
 load(qt_plugin)
 
 INCLUDEPATH += .
