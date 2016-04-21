@@ -57,6 +57,7 @@
 QT_BEGIN_NAMESPACE
 
 class QEglFSContext;
+class QEglFSWindow;
 class HwComposerScreenInfo;
 class HwComposerBackend;
 
@@ -80,6 +81,8 @@ public:
 
     void sleepDisplay(bool sleep);
     qreal refreshRate() const;
+
+    bool requestUpdate(QEglFSWindow *window);
 
 private:
     HwComposerScreenInfo *info;

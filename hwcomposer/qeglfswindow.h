@@ -70,6 +70,8 @@ public:
     virtual void invalidateSurface();
     virtual void resetSurface();
 
+    void requestUpdate();
+
 protected:
     EGLSurface m_surface;
     EGLNativeWindowType m_window;

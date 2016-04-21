@@ -189,4 +189,13 @@ qreal HwComposerContext::refreshRate() const
     return fps;
 }
 
+bool HwComposerContext::requestUpdate(QEglFSWindow *window)
+{
+    if (backend)
+        return backend->requestUpdate(window);
+    return false;
+}
+
+
+
 QT_END_NAMESPACE
