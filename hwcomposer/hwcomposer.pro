@@ -36,7 +36,7 @@ CONFIG += egl qpa/genericunixfontdatabase
 CONFIG += link_pkgconfig
 
 # For linking against libQt5PlatformSupport.a
-PKGCONFIG += libudev glib-2.0 mtdev
+PKGCONFIG_PRIVATE += libudev glib-2.0 mtdev
 
 # libhybris / droid integration
 PKGCONFIG += android-headers libhardware hybris-egl-platform
