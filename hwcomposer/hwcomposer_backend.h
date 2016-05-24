@@ -54,6 +54,7 @@
 
 #include <qdebug.h>
 
+class QEglFSWindow;
 
 // Evaluate "x", if it doesn't return zero, print a warning
 #define HWC_PLUGIN_EXPECT_ZERO(x) \
@@ -107,6 +108,8 @@ public:
     virtual void swap(EGLNativeDisplayType display, EGLSurface surface) = 0;
     virtual void sleepDisplay(bool sleep) = 0;
     virtual float refreshRate() = 0;
+
+    virtual bool requestUpdate(QEglFSWindow *) { return false; }
 
 protected:
     HwComposerBackend(hw_module_t *hwc_module);

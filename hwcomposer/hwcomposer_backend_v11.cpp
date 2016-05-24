@@ -41,8 +41,47 @@
 
 #include <android-version.h>
 #include "hwcomposer_backend_v11.h"
+#include "qeglfswindow.h"
+
+#include <QtCore/QElapsedTimer>
+#include <QtCore/QTimerEvent>
+#include <QtCore/QCoreApplication>
+#include <private/qwindow_p.h>
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
+
+// #define QPA_HWC_TIMING
+// #define QPA_HWC_SYNC_BEFORE_SET
+
+#ifdef QPA_HWC_TIMING
+#define QPA_HWC_TIMING_SAMPLE(variable) variable = timer.nsecsElapsed()
+static QElapsedTimer timer;
+static qint64 presentTime;
+static qint64 syncTime;
+static qint64 prepareTime;
+static qint64 setTime;
+#else
+#define QPA_HWC_TIMING_SAMPLE(variable)
+#endif
+
+struct HwcProcs_v11 : public hwc_procs
+{
+    HwComposerBackend_v11 *backend;
+};
+
+static void hwc11_callback_vsync(const struct hwc_procs *procs, int, int64_t)
+{
+    QCoreApplication::postEvent(static_cast<const HwcProcs_v11 *>(procs)->backend, new QEvent(QEvent::User));
+}
+
+static void hwc11_callback_invalidate(const struct hwc_procs *)
+{
+}
+
+static void hwc11_callback_hotplug(const struct hwc_procs *, int, int)
+{
+}
+
 
 class HWComposer : public HWComposerNativeWindow
 {
@@ -77,15 +116,33 @@ HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int for
 
 void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 {
+    QPA_HWC_TIMING_SAMPLE(presentTime);
+
     fblayer->handle = buffer->handle;
-    fblayer->acquireFenceFd = getFenceBufferFd(buffer);
     fblayer->releaseFenceFd = -1;
+
+#ifdef QPA_HWC_SYNC_BEFORE_SET
+    int acqFd = getFenceBufferFd(buffer);
+    if (acqFd >= 0) {
+        sync_wait(acqFd, -1);
+        close(acqFd);
+        fblayer->acquireFenceFd = -1;
+    }
+#else
+    fblayer->acquireFenceFd = getFenceBufferFd(buffer);
+#endif
+
+    QPA_HWC_TIMING_SAMPLE(syncTime);
 
     int err = hwcdevice->prepare(hwcdevice, num_displays, mlist);
     HWC_PLUGIN_EXPECT_ZERO(err);
 
+    QPA_HWC_TIMING_SAMPLE(prepareTime);
+
     err = hwcdevice->set(hwcdevice, num_displays, mlist);
     HWC_PLUGIN_EXPECT_ZERO(err);
+
+    QPA_HWC_TIMING_SAMPLE(setTime);
 
     setFenceBufferFd(buffer, fblayer->releaseFenceFd);
 
@@ -102,6 +159,14 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , hwc_mList(NULL)
     , num_displays(num_displays)
 {
+    procs = new HwcProcs_v11();
+    procs->invalidate = hwc11_callback_invalidate;
+    procs->hotplug = hwc11_callback_hotplug;
+    procs->vsync = hwc11_callback_vsync;
+    procs->backend = this;
+
+    hwc_device->registerProcs(hwc_device, procs);
+
     hwc_version = interpreted_version(hw_device);
     sleepDisplay(false);
 }
@@ -119,6 +184,8 @@ HwComposerBackend_v11::~HwComposerBackend_v11()
     if (hwc_list != NULL) {
         free(hwc_list);
     }
+
+    delete procs;
 }
 
 EGLNativeDisplayType
@@ -228,8 +295,20 @@ HwComposerBackend_v11::destroyWindow(EGLNativeWindowType window)
 void
 HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 {
-    // TODO: Wait for vsync?
+#ifdef QPA_HWC_TIMING
+    timer.start();
+#endif
+
     eglSwapBuffers(display, surface);
+
+#ifdef QPA_HWC_TIMING
+    qDebug("HWComposerBackend::swap(), present=%.3f, sync=%.3f, prepare=%.3f, set=%.3f, total=%.3f",
+           presentTime / 1000000.0,
+           (syncTime - presentTime) / 1000000.0,
+           (prepareTime - syncTime) / 1000000.0,
+           (setTime - prepareTime) / 1000000.0,
+           timer.nsecsElapsed() / 1000000.0);
+#endif
 }
 
 void
@@ -265,6 +344,54 @@ HwComposerBackend_v11::refreshRate()
     // "This query is not used for HWC_DEVICE_API_VERSION_1_1 and later.
     //  Instead, the per-display attribute HWC_DISPLAY_VSYNC_PERIOD is used."
     return 60.0;
+}
+
+void HwComposerBackend_v11::timerEvent(QTimerEvent *e)
+{
+    if (e->timerId() == m_vsyncTimeout.timerId()) {
+        hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
+        m_vsyncTimeout.stop();
+        // When waking up, we might get here as a result of requesting vsync events
+        // before the hwc is up and running. If we're timing out while still waiting
+        // for vsync to occur, trigger the update so we don't block the UI.
+        if (!m_pendingUpdate.isEmpty())
+            handleVSyncEvent();
+    } else if (e->timerId() == m_deliverUpdateTimeout.timerId()) {
+        m_deliverUpdateTimeout.stop();
+        handleVSyncEvent();
+    }
+}
+
+bool HwComposerBackend_v11::event(QEvent *e)
+{
+    if (e->type() == QEvent::User) {
+        static int idleTime = qBound(0, qgetenv("QPA_HWC_IDLE_TIME").toInt(), 100);
+        m_deliverUpdateTimeout.start(idleTime, this);
+        return true;
+    }
+    return QObject::event(e);
+}
+
+void HwComposerBackend_v11::handleVSyncEvent()
+{
+    QSet<QWindow *> pendingWindows = m_pendingUpdate;
+    m_pendingUpdate.clear();
+    foreach (QWindow *w, pendingWindows) {
+        QWindowPrivate *wp = (QWindowPrivate *) QWindowPrivate::get(w);
+        wp->deliverUpdateRequest();
+    }
+}
+
+bool HwComposerBackend_v11::requestUpdate(QEglFSWindow *window)
+{
+    if (m_vsyncTimeout.isActive()) {
+        m_vsyncTimeout.stop();
+    } else {
+        hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
+    }
+    m_vsyncTimeout.start(50, this);
+    m_pendingUpdate.insert(window->window());
+    return true;
 }
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */

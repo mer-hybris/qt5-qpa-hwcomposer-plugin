@@ -49,7 +49,12 @@
 // libhybris access to the native hwcomposer window
 #include <hwcomposer_window.h>
 
-class HwComposerBackend_v11 : public HwComposerBackend {
+#include <QBasicTimer>
+
+class HwcProcs_v11;
+class QWindow;
+
+class HwComposerBackend_v11 : public QObject, public HwComposerBackend {
 public:
     HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
     virtual ~HwComposerBackend_v11();
@@ -61,12 +66,23 @@ public:
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
 
+    virtual bool requestUpdate(QEglFSWindow *window) Q_DECL_OVERRIDE;
+
+    void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
+    void handleVSyncEvent();
+    bool event(QEvent *e) Q_DECL_OVERRIDE;
+
 private:
     hwc_composer_device_1_t *hwc_device;
     hwc_display_contents_1_t *hwc_list;
     hwc_display_contents_1_t **hwc_mList;
     uint32_t hwc_version;
     int num_displays;
+
+    QBasicTimer m_deliverUpdateTimeout;
+    QBasicTimer m_vsyncTimeout;
+    QSet<QWindow *> m_pendingUpdate;
+    HwcProcs_v11 *procs;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */

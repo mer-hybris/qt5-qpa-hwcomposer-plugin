@@ -147,4 +147,10 @@ QSurfaceFormat QEglFSWindow::format() const
     return m_format;
 }
 
+void QEglFSWindow::requestUpdate()
+{
+    if (!m_hwc->requestUpdate(this))
+        QPlatformWindow::requestUpdate();
+}
+
 QT_END_NAMESPACE
