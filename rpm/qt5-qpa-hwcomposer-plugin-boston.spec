@@ -12,7 +12,7 @@ Source3:    qt5-qpa-hwcomposer-plugin.spec.in
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
-BuildRequires:  pkgconfig(Qt5PlatformSupport)
+BuildRequires:  qt5-qtplatformsupport-devel >= 5.6.0
 BuildRequires:  pkgconfig(egl)
 BuildRequires:  libhybris-boston-libGLESv2
 BuildRequires:  libhybris-boston-libGLESv2-devel
