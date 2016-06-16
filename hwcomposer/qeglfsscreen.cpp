@@ -49,7 +49,6 @@ QT_BEGIN_NAMESPACE
 QEglFSScreen::QEglFSScreen(HwComposerContext *hwc, EGLDisplay dpy)
     : m_hwc(hwc)
     , m_dpy(dpy)
-    , m_pageFlipper(new QEglFSPageFlipper(this))
 {
 #ifdef QEGL_EXTRA_DEBUG
     qWarning("QEglScreen %p\n", this);
