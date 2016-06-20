@@ -114,7 +114,11 @@ QEglFSIntegration::QEglFSIntegration()
 
 QEglFSIntegration::~QEglFSIntegration()
 {
+#if QT_VERSION >= 0x050500
+    destroyScreen(mScreen);
+#else
     delete mScreen;
+#endif
 
     eglTerminate(mDisplay);
     delete mHwc;
@@ -196,8 +200,8 @@ void *QEglFSIntegration::nativeResourceForIntegration(const QByteArray &resource
         mHwc->sleepDisplay(true);
     } else if (lowerCaseResource == "displayon") {
         // Called from lipstick to turn on the display (src/homeapplication.cpp)
-	mHwc->sleepDisplay(false);
-    } 
+        mHwc->sleepDisplay(false);
+    }
 
     return NULL;
 }
