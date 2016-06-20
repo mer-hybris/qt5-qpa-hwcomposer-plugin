@@ -116,7 +116,11 @@ QEglFSIntegration::QEglFSIntegration()
 
 QEglFSIntegration::~QEglFSIntegration()
 {
+#if QT_VERSION >= 0x050500
+    destroyScreen(mScreen);
+#else
     delete mScreen;
+#endif
 
     eglTerminate(mDisplay);
     delete mHwc;
