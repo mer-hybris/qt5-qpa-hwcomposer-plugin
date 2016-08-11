@@ -158,6 +158,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , hwc_list(NULL)
     , hwc_mList(NULL)
     , num_displays(num_displays)
+    , m_displayOff(true)
 {
     procs = new HwcProcs_v11();
     procs->invalidate = hwc11_callback_invalidate;
@@ -314,7 +315,13 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 void
 HwComposerBackend_v11::sleepDisplay(bool sleep)
 {
+    m_displayOff = sleep;
     if (sleep) {
+        // Stop the timer so we don't end up calling into eventControl after the
+        // screen has been turned off. Doing so leads to logcat errors being
+        // logged.
+        m_vsyncTimeout.stop();
+
 #ifdef HWC_DEVICE_API_VERSION_1_4
         if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
             HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_OFF));
@@ -384,6 +391,10 @@ void HwComposerBackend_v11::handleVSyncEvent()
 
 bool HwComposerBackend_v11::requestUpdate(QEglFSWindow *window)
 {
+    // If the display is off, do updates via the normal Qt-based timer.
+    if (m_displayOff)
+        return false;
+
     if (m_vsyncTimeout.isActive()) {
         m_vsyncTimeout.stop();
     } else {
