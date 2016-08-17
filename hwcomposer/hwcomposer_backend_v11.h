@@ -79,6 +79,7 @@ private:
     uint32_t hwc_version;
     int num_displays;
 
+    bool m_displayOff;
     QBasicTimer m_deliverUpdateTimeout;
     QBasicTimer m_vsyncTimeout;
     QSet<QWindow *> m_pendingUpdate;
