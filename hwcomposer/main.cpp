@@ -44,20 +44,19 @@
 
 QT_BEGIN_NAMESPACE
 
-class QEglFSIntegrationPlugin : public QPlatformIntegrationPlugin
+class QEglFShwcIntegrationPlugin : public QPlatformIntegrationPlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID QPlatformIntegrationFactoryInterface_iid FILE "hwcomposer.json")
-
 public:
-    QPlatformIntegration *create(const QString&, const QStringList&);
+    QPlatformIntegration *create(const QString&, const QStringList&) Q_DECL_OVERRIDE;
 };
 
-QPlatformIntegration* QEglFSIntegrationPlugin::create(const QString& system, const QStringList& paramList)
+QPlatformIntegration* QEglFShwcIntegrationPlugin::create(const QString& system, const QStringList& paramList)
 {
     Q_UNUSED(paramList);
-    if (system.toLower() == "hwcomposer")
-        return new QEglFSIntegration;
+    if (!system.compare(QLatin1String("hwcomposer"), Qt::CaseInsensitive))
+        return new QEglFSIntegration();
 
     return 0;
 }
