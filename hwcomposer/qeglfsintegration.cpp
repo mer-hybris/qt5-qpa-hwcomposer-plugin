@@ -253,7 +253,7 @@ QStringList QEglFSIntegration::themeNames() const
 
 QPlatformTheme *QEglFSIntegration::createPlatformTheme(const QString &name) const
 {
-    if (name == QLatin1String("generic_qeglfs"))
+    if (name == QLatin1String("generic_eglfs"))
         return new GenericEglFSTheme;
 
     return GenericEglFSTheme::createUnixTheme(name);
