@@ -41,7 +41,6 @@
 
 #include "qeglfsscreen.h"
 #include "qeglfswindow.h"
-#include "qeglfspageflipper.h"
 
 #include <private/qmath_p.h>
 
@@ -49,7 +48,6 @@ QT_BEGIN_NAMESPACE
 
 QEglFSScreen::QEglFSScreen(HwComposerContext *hwc, EGLDisplay dpy)
     : m_hwc(hwc)
-    , m_pageFlipper(new QEglFSPageFlipper(this))
     , m_dpy(dpy)
 {
 #ifdef QEGL_EXTRA_DEBUG
@@ -59,16 +57,7 @@ QEglFSScreen::QEglFSScreen(HwComposerContext *hwc, EGLDisplay dpy)
 
 QEglFSScreen::~QEglFSScreen()
 {
-    delete m_pageFlipper;
 }
-
-#if 0
-QPlatformScreenPageFlipper *QEglFSScreen::pageFlipper() const
-{
-    return m_pageFlipper;
-}
-#endif
-
 
 QRect QEglFSScreen::geometry() const
 {
