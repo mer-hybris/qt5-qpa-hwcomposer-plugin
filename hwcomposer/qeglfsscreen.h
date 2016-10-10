@@ -72,13 +72,8 @@ public:
 
     qreal refreshRate() const;
 
-#if 0
-    QPlatformScreenPageFlipper *pageFlipper() const;
-#endif
-
 private:
     HwComposerContext *m_hwc;
-    QEglFSPageFlipper *m_pageFlipper;
     EGLDisplay m_dpy;
 };
 

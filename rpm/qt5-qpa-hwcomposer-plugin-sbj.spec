@@ -11,7 +11,7 @@ Source2:    precheckin.sh
 Source3:    qt5-qpa-hwcomposer-plugin.spec.in
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5DBus)
-BuildRequires:  pkgconfig(Qt5PlatformSupport)
+BuildRequires:  qt5-qtplatformsupport-devel >= 5.6.0
 BuildRequires:  pkgconfig(egl)
 BuildRequires:  libhybris-sbj-libGLESv2
 BuildRequires:  libhybris-sbj-libGLESv2-devel
@@ -32,8 +32,8 @@ BuildRequires:  pkgconfig(mtdev)
 #Provides: qt5-eglfs-qcom-hwcomposer-plugin > 5.1.0+git15
 
 # We need this specific version or later due to the introduction of QPlatformWindow::requestUpdate()
-BuildRequires:  qt5-qtgui-devel >= 5.2.1+git20
-Requires: qt5-qtgui >= 5.2.1+git20
+BuildRequires:  qt5-qtgui-devel >= 5.6.2
+Requires: qt5-qtgui >= 5.6.2
 
 
 %description
@@ -55,7 +55,7 @@ cd hwcomposer
 %qmake5_install
 
 # doesn't exist on Qt 5.1, we don't currently care about this for 5.2
-rm -f %{buildroot}/usr/lib/cmake/Qt5Gui/Qt5Gui_QEglFSIntegrationPlugin.cmake
+rm -f %{buildroot}/usr/lib/cmake/Qt5Gui/Qt5Gui_QEglFShwcIntegrationPlugin.cmake
 
 %files
 %defattr(-,root,root,-)
