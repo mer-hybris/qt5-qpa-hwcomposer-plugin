@@ -65,7 +65,6 @@
 #include <qpa/qplatforminputcontextfactory_p.h>
 
 #include "qeglfscontext.h"
-#include "qeglfspageflipper.h"
 
 #include <EGL/egl.h>
 
@@ -117,7 +116,11 @@ QEglFSIntegration::QEglFSIntegration()
 
 QEglFSIntegration::~QEglFSIntegration()
 {
+#if QT_VERSION >= 0x050500
+    destroyScreen(mScreen);
+#else
     delete mScreen;
+#endif
 
     eglTerminate(mDisplay);
     delete mHwc;
@@ -152,7 +155,7 @@ QPlatformBackingStore *QEglFSIntegration::createPlatformBackingStore(QWindow *wi
 
 QPlatformOpenGLContext *QEglFSIntegration::createPlatformOpenGLContext(QOpenGLContext *context) const
 {
-    return new QEglFSContext(mHwc, static_cast<QEglFSPageFlipper *>(mScreen->pageFlipper()), mHwc->surfaceFormatFor(context->format()), context->shareHandle(), mDisplay);
+    return new QEglFSContext(mHwc, mHwc->surfaceFormatFor(context->format()), context->shareHandle(), mDisplay);
 }
 
 QPlatformOffscreenSurface *QEglFSIntegration::createPlatformOffscreenSurface(QOffscreenSurface *surface) const
@@ -250,7 +253,7 @@ QStringList QEglFSIntegration::themeNames() const
 
 QPlatformTheme *QEglFSIntegration::createPlatformTheme(const QString &name) const
 {
-    if (name == QLatin1String("generic_qeglfs"))
+    if (name == QLatin1String("generic_eglfs"))
         return new GenericEglFSTheme;
 
     return GenericEglFSTheme::createUnixTheme(name);

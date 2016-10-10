@@ -8,7 +8,7 @@ URL:        http://github.com/mer-hybris/qt5-qpa-hwcomposer-plugin
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5DBus)
-BuildRequires:  pkgconfig(Qt5PlatformSupport)
+BuildRequires:  qt5-qtplatformsupport-devel >= 5.6.0
 BuildRequires:  pkgconfig(egl)
 BuildRequires:  pkgconfig(glesv2)
 BuildRequires:  pkgconfig(wayland-egl)
@@ -38,7 +38,8 @@ hwcomposer for composing content onto the screen.
 %build
 export QTDIR=/usr/share/qt5
 cd hwcomposer
-%qmake5
+# Qt is built with mesa, which has gl3.h. We're built with hybris which doesn't include gl3.h, so explicitly disable es3
+%qmake5 DEFINES+=QT_NO_OPENGL_ES_3
 make %{_smp_mflags}
 
 %install
@@ -48,6 +49,7 @@ cd hwcomposer
 
 # doesn't exist on Qt 5.1, we don't currently care about this for 5.2
 rm -f %{buildroot}/usr/lib/cmake/Qt5Gui/Qt5Gui_QEglFSIntegrationPlugin.cmake
+rm -f %{buildroot}/usr/lib/cmake/Qt5Gui/Qt5Gui_QEglFShwcIntegrationPlugin.cmake
 
 %files
 %defattr(-,root,root,-)
