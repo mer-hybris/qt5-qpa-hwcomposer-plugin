@@ -247,6 +247,9 @@ HwComposerBackend_v11::createWindow(int width, int height)
     bool tryToForceGLES = !qgetenv("QPA_HWC_FORCE_GLES").isEmpty();
     layer->planeAlpha = tryToForceGLES ? 1 : 255;
 #endif
+#ifdef HWC_DEVICE_API_VERSION_1_5
+    layer->surfaceDamage.numRects = 0;
+#endif
 
     layer = &hwc_list->hwLayers[1];
     memset(layer, 0, sizeof(hwc_layer_1_t));
@@ -271,6 +274,9 @@ HwComposerBackend_v11::createWindow(int width, int height)
     layer->releaseFenceFd = -1;
 #if (ANDROID_VERSION_MAJOR >= 4) && (ANDROID_VERSION_MINOR >= 3) || (ANDROID_VERSION_MAJOR >= 5)
     layer->planeAlpha = 0xff;
+#endif
+#ifdef HWC_DEVICE_API_VERSION_1_5
+    layer->surfaceDamage.numRects = 0;
 #endif
 
     hwc_list->retireFenceFd = -1;
@@ -327,10 +333,20 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
             HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_OFF));
         } else
 #endif
+#ifdef HWC_DEVICE_API_VERSION_1_5
+        if (hwc_version == HWC_DEVICE_API_VERSION_1_5) {
+            HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_OFF));
+        } else
+#endif
             HWC_PLUGIN_EXPECT_ZERO(hwc_device->blank(hwc_device, 0, 1));
     } else {
 #ifdef HWC_DEVICE_API_VERSION_1_4
         if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
+            HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_NORMAL));
+        } else
+#endif
+#ifdef HWC_DEVICE_API_VERSION_1_5
+        if (hwc_version == HWC_DEVICE_API_VERSION_1_5) {
             HWC_PLUGIN_EXPECT_ZERO(hwc_device->setPowerMode(hwc_device, 0, HWC_POWER_MODE_NORMAL));
         } else
 #endif
