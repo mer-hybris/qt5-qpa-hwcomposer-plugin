@@ -327,6 +327,7 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
         // screen has been turned off. Doing so leads to logcat errors being
         // logged.
         m_vsyncTimeout.stop();
+        hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
 
 #ifdef HWC_DEVICE_API_VERSION_1_4
         if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
@@ -354,6 +355,12 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
 
         if (hwc_list) {
             hwc_list->flags |= HWC_GEOMETRY_CHANGED;
+        }
+
+        // If we have pending updates, make sure those start happening now..
+        if (m_pendingUpdate.size()) {
+            hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
+            m_vsyncTimeout.start(50, this);
         }
     }
 }
@@ -389,7 +396,8 @@ bool HwComposerBackend_v11::event(QEvent *e)
 {
     if (e->type() == QEvent::User) {
         static int idleTime = qBound(0, qgetenv("QPA_HWC_IDLE_TIME").toInt(), 100);
-        m_deliverUpdateTimeout.start(idleTime, this);
+        if (!m_deliverUpdateTimeout.isActive())
+            m_deliverUpdateTimeout.start(idleTime, this);
         return true;
     }
     return QObject::event(e);
