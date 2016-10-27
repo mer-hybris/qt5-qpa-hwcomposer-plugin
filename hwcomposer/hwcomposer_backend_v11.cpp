@@ -321,6 +321,7 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
         // screen has been turned off. Doing so leads to logcat errors being
         // logged.
         m_vsyncTimeout.stop();
+        hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
 
 #ifdef HWC_DEVICE_API_VERSION_1_4
         if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
@@ -338,6 +339,12 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
 
         if (hwc_list) {
             hwc_list->flags |= HWC_GEOMETRY_CHANGED;
+        }
+
+        // If we have pending updates, make sure those start happening now..
+        if (m_pendingUpdate.size()) {
+            hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
+            m_vsyncTimeout.start(50, this);
         }
     }
 }
