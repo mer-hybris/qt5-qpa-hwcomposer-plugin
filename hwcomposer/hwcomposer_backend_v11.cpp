@@ -321,12 +321,11 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 void
 HwComposerBackend_v11::sleepDisplay(bool sleep)
 {
-    m_displayOff = sleep;
-    if (sleep) {
-        // Stop the timer so we don't end up calling into eventControl after the
-        // screen has been turned off. Doing so leads to logcat errors being
-        // logged.
-        m_vsyncTimeout.stop();
+    // TODO: remove debug spamming
+    qWarning("m_displayOff: %d -> %d", m_displayOff, sleep);
+
+    if (m_displayOff != sleep) {
+        m_displayOff = sleep;
 
 #ifdef HWC_DEVICE_API_VERSION_1_4
         if (hwc_version == HWC_DEVICE_API_VERSION_1_4) {
@@ -372,7 +371,13 @@ HwComposerBackend_v11::refreshRate()
 void HwComposerBackend_v11::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == m_vsyncTimeout.timerId()) {
-        hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
+        if (!m_displayOff) {
+            hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
+        }
+        else {
+            // TODO: remove debug spamming
+            qWarning("skip hwc_device->eventControl(...)");
+        }
         m_vsyncTimeout.stop();
         // When waking up, we might get here as a result of requesting vsync events
         // before the hwc is up and running. If we're timing out while still waiting
@@ -408,13 +413,15 @@ void HwComposerBackend_v11::handleVSyncEvent()
 bool HwComposerBackend_v11::requestUpdate(QEglFSWindow *window)
 {
     // If the display is off, do updates via the normal Qt-based timer.
-    if (m_displayOff)
-        return false;
-
     if (m_vsyncTimeout.isActive()) {
         m_vsyncTimeout.stop();
     } else {
-        hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
+        if (!m_displayOff)
+            hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 1);
+        else {
+            // TODO: remove debug spamming
+            qWarning("skip hwc_device->eventControl(...)");
+        }
     }
     m_vsyncTimeout.start(50, this);
     m_pendingUpdate.insert(window->window());
