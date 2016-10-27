@@ -396,7 +396,8 @@ bool HwComposerBackend_v11::event(QEvent *e)
 {
     if (e->type() == QEvent::User) {
         static int idleTime = qBound(0, qgetenv("QPA_HWC_IDLE_TIME").toInt(), 100);
-        m_deliverUpdateTimeout.start(idleTime, this);
+        if (!m_deliverUpdateTimeout.isActive())
+            m_deliverUpdateTimeout.start(idleTime, this);
         return true;
     }
     return QObject::event(e);
