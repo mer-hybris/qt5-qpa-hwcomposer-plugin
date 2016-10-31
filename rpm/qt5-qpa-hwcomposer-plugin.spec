@@ -1,6 +1,9 @@
 Name:       qt5-qpa-hwcomposer-plugin
 Summary:    Qt 5 QPA hwcomposer plugin
-Version:    5.1.0.2
+Version:    5.6.2.1
+# The following two lines can be removed after next stop release.
+Provides:   qt5-qpa-hwcomposer-plugin-sbj >= %{version}
+Obsoletes:  qt5-qpa-hwcomposer-plugin-sbj < %{version}
 Release:    1
 Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
