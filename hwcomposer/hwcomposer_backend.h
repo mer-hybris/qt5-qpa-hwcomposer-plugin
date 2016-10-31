@@ -80,7 +80,7 @@ class QEglFSWindow;
     { int res; if ((res = (x)) != 0) \
         qFatal("QPA-HWC: %s in %s returned %i", (#x), __func__, res); }
 
-static uint32_t interpreted_version(hw_device_t *hwc_device)
+inline static uint32_t interpreted_version(hw_device_t *hwc_device)
 {
     uint32_t version = hwc_device->version;
 
