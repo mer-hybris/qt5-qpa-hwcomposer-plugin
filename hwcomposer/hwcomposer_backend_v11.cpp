@@ -174,6 +174,8 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
 
 HwComposerBackend_v11::~HwComposerBackend_v11()
 {
+    hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
+
     // Close the hwcomposer handle
     if (!qgetenv("QPA_HWC_WORKAROUNDS").split(',').contains("no-close-hwc"))
         HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwc_device));
