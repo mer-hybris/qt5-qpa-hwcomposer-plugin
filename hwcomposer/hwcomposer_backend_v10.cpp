@@ -146,6 +146,8 @@ HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_
 
 HwComposerBackend_v10::~HwComposerBackend_v10()
 {
+    hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
+
     // Close the hwcomposer handle
     HWC_PLUGIN_EXPECT_ZERO(hwc_close_1(hwc_device));
 
