@@ -112,10 +112,11 @@ public:
     virtual bool requestUpdate(QEglFSWindow *) { return false; }
 
 protected:
-    HwComposerBackend(hw_module_t *hwc_module);
+    HwComposerBackend(hw_module_t *hwc_module, void *libmsf);
     virtual ~HwComposerBackend();
 
     hw_module_t *hwc_module;
+    void *libminisf;
 };
 
 #endif /* HWCOMPOSER_BACKEND_H */

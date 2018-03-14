@@ -39,6 +39,8 @@
 **
 ****************************************************************************/
 
+#include <dlfcn.h>
+
 #include "hwcomposer_backend.h"
 #ifdef HWC_DEVICE_API_VERSION_0_1
 #include "hwcomposer_backend_v0.h"
@@ -47,13 +49,21 @@
 #include "hwcomposer_backend_v11.h"
 
 
-HwComposerBackend::HwComposerBackend(hw_module_t *hwc_module)
-    : hwc_module(hwc_module)
+extern "C" void *android_dlopen(const char *filename, int flags);
+extern "C" void *android_dlsym(void *handle, const char *symbol);
+extern "C" int android_dlclose(void *handle);
+
+HwComposerBackend::HwComposerBackend(hw_module_t *hwc_module, void *libmsf)
+    : hwc_module(hwc_module), libminisf(libmsf)
 {
 }
 
 HwComposerBackend::~HwComposerBackend()
 {
+    if (libminisf) {
+        android_dlclose(libminisf);
+    }
+
     // XXX: Close/free hwc_module?
 }
 
@@ -62,12 +72,32 @@ HwComposerBackend::create()
 {
     hw_module_t *hwc_module = NULL;
     hw_device_t *hwc_device = NULL;
+    void *libminisf;
+    void (*startMiniSurfaceFlinger)(void) = NULL;
 
     // Some implementations insist on having the framebuffer module opened before loading
     // the hardware composer one. Therefor we rely on using the fbdev HYBRIS_EGLPLATFORM
     // here and use eglGetDisplay to initialize it.
     if (qEnvironmentVariableIsEmpty("QT_QPA_NO_FRAMEBUFFER_FIRST")) {
 	    eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    }
+
+    // A reason for calling this method here is to initialize the binder
+    // thread pool such that services started from for example the
+    // hwcomposer plugin don't get stuck.
+    // Another is to have the SurfaceFlinger service in the same process
+    // as hwcomposer, on some devices this could improve performance.
+
+    libminisf = android_dlopen("libminisf.so", RTLD_LAZY);
+
+    if (libminisf) {
+	startMiniSurfaceFlinger = (void(*)(void))android_dlsym(libminisf, "startMiniSurfaceFlinger");
+    }
+
+    if (startMiniSurfaceFlinger) {
+	startMiniSurfaceFlinger();
+    } else {
+	fprintf(stderr, "libminisf is incompatible or missing. Can not possibly start the SurfaceFlinger service. If you're experiencing troubles with media try updating droidmedia (and/or this plugin).");
     }
 
     // Open hardware composer
@@ -99,7 +129,7 @@ HwComposerBackend::create()
     if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
         (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
         (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
-        return new HwComposerBackend_v0(hwc_module, hwc_device);
+        return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
     }
 #endif
 
@@ -109,12 +139,12 @@ HwComposerBackend::create()
         case HWC_DEVICE_API_VERSION_0_1:
         case HWC_DEVICE_API_VERSION_0_2:
         case HWC_DEVICE_API_VERSION_0_3:
-            return new HwComposerBackend_v0(hwc_module, hwc_device);
+            return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
             break;
 #endif
 #ifdef HWC_DEVICE_API_VERSION_1_0
         case HWC_DEVICE_API_VERSION_1_0:
-            return new HwComposerBackend_v10(hwc_module, hwc_device);
+            return new HwComposerBackend_v10(hwc_module, hwc_device, libminisf);
             break;
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
@@ -133,7 +163,7 @@ HwComposerBackend::create()
 #endif
             // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
             // underrun/overruns happen
-            return new HwComposerBackend_v11(hwc_module, hwc_device, HWC_NUM_DISPLAY_TYPES);
+            return new HwComposerBackend_v11(hwc_module, hwc_device, libminisf, HWC_NUM_DISPLAY_TYPES);
             break;
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
         default:
