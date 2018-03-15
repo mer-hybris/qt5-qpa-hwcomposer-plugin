@@ -53,7 +53,6 @@
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
 // #define QPA_HWC_TIMING
-// #define QPA_HWC_SYNC_BEFORE_SET
 
 #ifdef QPA_HWC_TIMING
 #define QPA_HWC_TIMING_SAMPLE(variable) variable = timer.nsecsElapsed()
@@ -99,6 +98,7 @@ class HWComposer : public HWComposerNativeWindow
         hwc_composer_device_1_t *hwcdevice;
         hwc_display_contents_1_t **mlist;
         int num_displays;
+        bool m_syncBeforeSet;
     protected:
         void present(HWComposerNativeWindowBuffer *buffer);
 
@@ -121,6 +121,7 @@ HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int for
 {
     int bufferCount = qBound(2, qgetenv("QPA_HWC_BUFFER_COUNT").toInt(), 8);
     setBufferCount(bufferCount);
+    m_syncBeforeSet = qEnvironmentVariableIsSet("QPA_HWC_SYNC_BEFORE_SET");
 }
 
 void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
@@ -132,16 +133,16 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     fblayer->handle = buffer->handle;
     fblayer->releaseFenceFd = -1;
 
-#ifdef QPA_HWC_SYNC_BEFORE_SET
-    int acqFd = getFenceBufferFd(buffer);
-    if (acqFd >= 0) {
-        sync_wait(acqFd, -1);
-        close(acqFd);
-        fblayer->acquireFenceFd = -1;
+    if (m_syncBeforeSet) {
+        int acqFd = getFenceBufferFd(buffer);
+        if (acqFd >= 0) {
+            sync_wait(acqFd, -1);
+            close(acqFd);
+            fblayer->acquireFenceFd = -1;
+        }
+    } else {
+        fblayer->acquireFenceFd = getFenceBufferFd(buffer);
     }
-#else
-    fblayer->acquireFenceFd = getFenceBufferFd(buffer);
-#endif
 
     QPA_HWC_TIMING_SAMPLE(syncTime);
 
