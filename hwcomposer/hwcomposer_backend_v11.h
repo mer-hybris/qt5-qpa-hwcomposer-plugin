@@ -56,7 +56,7 @@ class QWindow;
 
 class HwComposerBackend_v11 : public QObject, public HwComposerBackend {
 public:
-    HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays);
+    HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, void *libminisf, int num_displays);
     virtual ~HwComposerBackend_v11();
 
     virtual EGLNativeDisplayType display();

@@ -165,8 +165,8 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     }
 }
 
-HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, int num_displays)
-    : HwComposerBackend(hwc_module)
+HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, void *libminisf, int num_displays)
+    : HwComposerBackend(hwc_module, libminisf)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
     , hwc_list(NULL)
     , hwc_mList(NULL)

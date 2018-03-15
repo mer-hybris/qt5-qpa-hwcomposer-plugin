@@ -132,8 +132,8 @@ static hwc_procs_t global_procs = {
 };
 
 
-HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_t *hw_device)
-    : HwComposerBackend(hwc_module)
+HwComposerBackend_v10::HwComposerBackend_v10(hw_module_t *hwc_module, hw_device_t *hw_device, void *libminisf)
+    : HwComposerBackend(hwc_module, libminisf)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
     , hwc_list(NULL)
     , hwc_mList(NULL)
