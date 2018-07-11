@@ -39,28 +39,15 @@
 **
 ****************************************************************************/
 
-#include <qpa/qplatformintegrationplugin.h>
-#include "qeglfsintegration.h"
+#include <private/qeglfsdeviceintegration_p.h>
+#include "eglfshwcintegration.h"
 
-QT_BEGIN_NAMESPACE
-
-class QEglFShwcIntegrationPlugin : public QPlatformIntegrationPlugin
+class EglFsHwcIntegrationPlugin : public QEglFSDeviceIntegrationPlugin
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID QPlatformIntegrationFactoryInterface_iid FILE "hwcomposer.json")
+    Q_PLUGIN_METADATA(IID QEglFSDeviceIntegrationFactoryInterface_iid FILE "hwcomposer.json")
 public:
-    QPlatformIntegration *create(const QString&, const QStringList&) Q_DECL_OVERRIDE;
+    QEglFSDeviceIntegration *create() override { return new EglFsHwcIntegration; }
 };
-
-QPlatformIntegration* QEglFShwcIntegrationPlugin::create(const QString& system, const QStringList& paramList)
-{
-    Q_UNUSED(paramList);
-    if (!system.compare(QLatin1String("hwcomposer"), Qt::CaseInsensitive))
-        return new QEglFSIntegration();
-
-    return 0;
-}
-
-QT_END_NAMESPACE
 
 #include "main.moc"

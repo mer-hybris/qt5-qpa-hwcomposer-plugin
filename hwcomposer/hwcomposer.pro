@@ -1,43 +1,14 @@
-TARGET = hwcomposer
+TARGET = eglfs-hwcomposer-integration
 
-PLUGIN_TYPE = platforms
-PLUGIN_CLASS_NAME = QEglFShwcIntegrationPlugin
-load(qt_plugin)
+QT += eglfsdeviceintegration-private
 
-INCLUDEPATH += .
-DEPENDPATH += .
+DEFINES += \
+    QEGL_EXTRA_DEBUG \
+    MESA_EGL_NO_X11_HEADERS
 
-SOURCES += main.cpp
-
-SOURCES += hwcomposer_context.cpp
-HEADERS += hwcomposer_context.h
-
-SOURCES += hwcomposer_screeninfo.cpp
-HEADERS += hwcomposer_screeninfo.h
-
-SOURCES += hwcomposer_backend.cpp
-HEADERS += hwcomposer_backend.h
-
-SOURCES += hwcomposer_backend_v0.cpp
-HEADERS += hwcomposer_backend_v0.h
-
-SOURCES += hwcomposer_backend_v10.cpp
-HEADERS += hwcomposer_backend_v10.h
-
-SOURCES += hwcomposer_backend_v11.cpp
-HEADERS += hwcomposer_backend_v11.h
-
-HEADERS += hwcinterface.h
-
-QT += core-private compositor-private gui-private platformsupport-private dbus
-
-DEFINES += QEGL_EXTRA_DEBUG
-CONFIG += egl qpa/genericunixfontdatabase
-
-CONFIG += link_pkgconfig
-
-# For linking against libQt5PlatformSupport.a
-PKGCONFIG_PRIVATE += libudev glib-2.0 mtdev
+CONFIG += \
+     egl \
+     link_pkgconfig
 
 # libhybris / droid integration
 PKGCONFIG += android-headers libhardware hybris-egl-platform
@@ -51,19 +22,28 @@ packagesExist(hwcomposer-egl) {
     DEFINES += HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 }
 
-# Avoid X11 header collision
-DEFINES += MESA_EGL_NO_X11_HEADERS
+SOURCES += \
+    eglfshwcintegration.cpp \
+    eglfshwcwindow.cpp \
+    hwcomposer_backend.cpp \
+    hwcomposer_backend_v0.cpp \
+    hwcomposer_backend_v10.cpp \
+    hwcomposer_backend_v11.cpp \
+    hwcomposer_screeninfo.cpp \
+    main.cpp
 
-SOURCES +=  $$PWD/qeglfsintegration.cpp \
-            $$PWD/qeglfswindow.cpp \
-            $$PWD/qeglfsbackingstore.cpp \
-            $$PWD/qeglfsscreen.cpp \
-            $$PWD/qeglfscontext.cpp
-
-HEADERS +=  $$PWD/qeglfsintegration.h \
-            $$PWD/qeglfswindow.h \
-            $$PWD/qeglfsbackingstore.h \
-            $$PWD/qeglfsscreen.h \
-            $$PWD/qeglfscontext.h
+HEADERS += \
+    eglfshwcintegration.h \
+    eglfshwcwindow.h \
+    hwcinterface.h \
+    hwcomposer_backend.h \
+    hwcomposer_backend_v0.h \
+    hwcomposer_backend_v10.h \
+    hwcomposer_backend_v11.h \
+    hwcomposer_screeninfo.h
 
 QMAKE_LFLAGS += $$QMAKE_LFLAGS_NOUNDEF
+
+PLUGIN_TYPE = egldeviceintegrations
+PLUGIN_CLASS_NAME = EglFsHwcIntegrationPlugin
+load(qt_plugin)

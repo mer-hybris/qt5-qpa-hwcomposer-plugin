@@ -3,7 +3,10 @@
 ** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the plugins of the Qt Toolkit.
+** Copyright (C) 2013 Jolla Ltd.
+** Contact: Thomas Perl <thomas.perl@jolla.com>
+**
+** This file is part of the hwcomposer plugin.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,48 +42,24 @@
 **
 ****************************************************************************/
 
-#ifndef QEGLFSSCREEN_H
-#define QEGLFSSCREEN_H
+#ifndef EGLFSHWCWINDOW_H
+#define EGLFSHWCWINDOW_H
 
-#include <qpa/qplatformscreen.h>
-#include <QtCore/QTextStream>
+#include <private/qeglfswindow_p.h>
 
-#include "hwcomposer_context.h"
+class HwComposerBackend;
 
-#include <EGL/egl.h>
-
-
-QT_BEGIN_NAMESPACE
-
-class QEglFSPageFlipper;
-class QPlatformOpenGLContext;
-
-class QEglFSScreen : public QPlatformScreen //huh: FullScreenScreen ;) just to follow namespace
+class EglFsHwcWindow : public QEglFSWindow
 {
 public:
-    QEglFSScreen(HwComposerContext *hwc, EGLDisplay display);
-    ~QEglFSScreen();
+    EglFsHwcWindow(HwComposerBackend *hwc, QWindow *window);
+    ~EglFsHwcWindow();
 
-    QRect geometry() const;
-    int depth() const;
-    QImage::Format format() const;
-
-    QSizeF physicalSize() const;
-    QDpi logicalDpi() const;
-
-    EGLDisplay display() const { return m_dpy; }
-
-    qreal refreshRate() const;
-
-#if 0
-    QPlatformScreenPageFlipper *pageFlipper() const;
-#endif
+    void requestUpdate() override;
 
 private:
-    HwComposerContext *m_hwc;
-    QEglFSPageFlipper *m_pageFlipper;
-    EGLDisplay m_dpy;
+    HwComposerBackend * const m_hwc;
 };
 
-QT_END_NAMESPACE
-#endif // QEGLFSSCREEN_H
+#endif
+

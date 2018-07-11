@@ -73,7 +73,7 @@ Q_DECLARE_LOGGING_CATEGORY(QPA_LOG_HWC)
 
 // Evaluate "x", if it is NULL, exit with a fatal error
 #define HWC_PLUGIN_FATAL(x) \
-    qFatal("QPA-HWC: %s", x, __func__)
+    qFatal("QPA-HWC: %s in %s", x, __func__)
 
 // Evaluate "x", if it is NULL, exit with a fatal error
 #define HWC_PLUGIN_ASSERT_NOT_NULL(x) \
