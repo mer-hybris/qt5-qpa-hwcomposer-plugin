@@ -47,6 +47,9 @@
 #endif
 #include "hwcomposer_backend_v10.h"
 #include "hwcomposer_backend_v11.h"
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
+#include "hwcomposer_backend_v20.h"
+#endif
 
 
 extern "C" void *android_dlopen(const char *filename, int flags);
@@ -166,6 +169,11 @@ HwComposerBackend::create()
             return new HwComposerBackend_v11(hwc_module, hwc_device, libminisf, HWC_NUM_DISPLAY_TYPES);
             break;
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
+        case HWC_DEVICE_API_VERSION_2_0:
+            return new HwComposerBackend_v20(hwc_module, libminisf);
+            break;
+#endif
         default:
             fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
                     hwc_module->module_api_version,
