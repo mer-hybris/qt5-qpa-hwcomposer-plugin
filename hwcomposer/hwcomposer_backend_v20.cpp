@@ -137,14 +137,22 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
     uint32_t numTypes = 0;
     uint32_t numRequests = 0;
     int displayId = 0;
+    hwc2_error_t error = HWC2_ERROR_NONE;
 
     QSystraceEvent trace("graphics", "QPA::present");
 
     QPA_HWC_TIMING_SAMPLE(presentTime);
 
-    hwc2_error_t error = hwc2_compat_display_validate(hwcDisplay, &numTypes,
-                                                      &numRequests);
+    int acquireFenceFd = getFenceBufferFd(buffer);
 
+    if (m_syncBeforeSet && acquireFenceFd >= 0) {
+        sync_wait(acquireFenceFd, -1);
+        close(acquireFenceFd);
+        acquireFenceFd = -1;
+    }
+
+    error = hwc2_compat_display_validate(hwcDisplay, &numTypes,
+                                                    &numRequests);
     if (error != HWC2_ERROR_NONE && error != HWC2_ERROR_HAS_CHANGES) {
         qDebug("prepare: validate failed for display %d: %d", displayId, error);
         return;
@@ -152,7 +160,7 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
 
     if (numTypes || numRequests) {
         qDebug("prepare: validate required changes for display %d: %d",
-              displayId, error);
+               displayId, error);
         return;
     }
 
@@ -163,14 +171,6 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
     }
 
     QPA_HWC_TIMING_SAMPLE(prepareTime);
-
-    int acquireFenceFd = getFenceBufferFd(buffer);
-
-    if (m_syncBeforeSet && acquireFenceFd >= 0) {
-        sync_wait(acquireFenceFd, -1);
-        close(acquireFenceFd);
-        acquireFenceFd = -1;
-    }
 
     QSystrace::begin("graphics", "QPA::set_client_target", "");
     hwc2_compat_display_set_client_target(hwcDisplay, /* slot */0, buffer,
@@ -204,15 +204,11 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
     int fenceFd = hwc2_compat_out_fences_get_fence(fences, layer);
     if (fenceFd != -1)
         setFenceBufferFd(buffer, fenceFd);
+    else if (presentFence != -1)
+        setFenceBufferFd(buffer, presentFence);
 
     hwc2_compat_out_fences_destroy(fences);
 
-    if (lastPresentFence != -1) {
-        // Signals when the last frame is replaced by current on screen
-        // FIXME: Does it make sense to wait for this?
-        sync_wait(lastPresentFence, -1);
-        close(lastPresentFence);
-    }
     lastPresentFence = presentFence;
 }
 
