@@ -126,10 +126,14 @@ HWC2Window::HWC2Window(unsigned int width, unsigned int height,
                     HWComposerNativeWindow(width, height, format),
                     layer(layer), hwcDisplay(display)
 {
-    int bufferCount = qBound(2, qgetenv("QPA_HWC_BUFFER_COUNT").toInt(), 8);
+    int bufferCount = qgetenv("QPA_HWC_BUFFER_COUNT").toInt();
+    if (bufferCount)
+        bufferCount = qBound(2, bufferCount, 8);
+    else
+        // default to triple-buffering as on Android
+        bufferCount = 3;
     setBufferCount(bufferCount);
     m_syncBeforeSet = qEnvironmentVariableIsSet("QPA_HWC_SYNC_BEFORE_SET");
-
 }
 
 void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
