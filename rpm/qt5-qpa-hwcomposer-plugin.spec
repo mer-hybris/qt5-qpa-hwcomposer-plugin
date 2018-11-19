@@ -24,7 +24,6 @@ BuildRequires:  pkgconfig(libsync)
 %endif
 BuildRequires:  pkgconfig(hybris-egl-platform)
 BuildRequires:  pkgconfig(android-headers)
-BuildRequires:  pkgconfig(libhwc2)
 BuildRequires:  qt5-qtwayland-wayland_egl-devel
 BuildRequires:  wayland-devel
 BuildRequires:  pkgconfig(udev)
