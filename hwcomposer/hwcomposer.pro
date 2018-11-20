@@ -27,9 +27,6 @@ HEADERS += hwcomposer_backend_v10.h
 SOURCES += hwcomposer_backend_v11.cpp
 HEADERS += hwcomposer_backend_v11.h
 
-SOURCES += hwcomposer_backend_v20.cpp
-HEADERS += hwcomposer_backend_v20.h
-
 QT += core-private compositor-private gui-private platformsupport-private dbus
 
 DEFINES += QEGL_EXTRA_DEBUG
@@ -55,6 +52,8 @@ packagesExist(hwcomposer-egl) {
 packagesExist(libhwc2) {
     PKGCONFIG += libhwc2
     DEFINES += HWC_PLUGIN_HAVE_HWCOMPOSER2_API
+    SOURCES += hwcomposer_backend_v20.cpp
+    HEADERS += hwcomposer_backend_v20.h
 }
 
 # Avoid X11 header collision
