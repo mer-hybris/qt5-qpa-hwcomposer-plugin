@@ -245,13 +245,13 @@ HwComposerBackend_v20::HwComposerBackend_v20(hw_module_t *hwc_module, void *libm
         usleep(1000);
     }
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc2_primary_display);
-
-    sleepDisplay(false);
 }
 
 HwComposerBackend_v20::~HwComposerBackend_v20()
 {
     //hwc_device->eventControl(hwc_device, 0, HWC_EVENT_VSYNC, 0);
+
+    hwc2_compat_display_set_power_mode(hwc2_primary_display, HWC2_POWER_MODE_DOZE_SUSPEND);
 
     // Close the hwcomposer handle
     if (!qgetenv("QPA_HWC_WORKAROUNDS").split(',').contains("no-close-hwc"))
@@ -290,6 +290,7 @@ HwComposerBackend_v20::createWindow(int width, int height)
                                          HAL_PIXEL_FORMAT_RGBA_8888,
                                          hwc2_primary_display, layer);
 
+    sleepDisplay(false);
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 
