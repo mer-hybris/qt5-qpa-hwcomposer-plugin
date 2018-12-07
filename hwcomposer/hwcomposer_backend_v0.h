@@ -56,6 +56,15 @@ public:
     virtual void swap(EGLNativeDisplayType display, EGLSurface surface);
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
+    virtual bool getScreenSizes(int *width, int *height, float *physical_width, float *physical_height)
+    {
+        *width = 0;
+        *height = 0;
+        *physical_width = 0;
+        *physical_height = 0;
+        // N/A
+        return false;
+    }
 
 private:
     hwc_composer_device_t *hwc_device;

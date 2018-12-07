@@ -65,6 +65,7 @@ public:
     virtual void swap(EGLNativeDisplayType display, EGLSurface surface);
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
+    virtual bool getScreenSizes(int *width, int *height, float *physical_width, float *physical_height);
 
     virtual bool requestUpdate(QEglFSWindow *window) Q_DECL_OVERRIDE;
 
@@ -73,6 +74,7 @@ public:
     bool event(QEvent *e) Q_DECL_OVERRIDE;
 
 private:
+    int getSingleAttribute(uint32_t attribute);
     hwc_composer_device_1_t *hwc_device;
     hwc_display_contents_1_t *hwc_list;
     hwc_display_contents_1_t **hwc_mList;
