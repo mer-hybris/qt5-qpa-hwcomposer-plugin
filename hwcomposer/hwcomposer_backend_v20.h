@@ -66,6 +66,7 @@ public:
     virtual void swap(EGLNativeDisplayType display, EGLSurface surface);
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
+    virtual bool getScreenSizes(int *width, int *height, float *physical_width, float *physical_height);
 
     virtual bool requestUpdate(QEglFSWindow *window) Q_DECL_OVERRIDE;
 

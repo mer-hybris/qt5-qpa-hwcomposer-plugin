@@ -344,12 +344,37 @@ HwComposerBackend_v20::sleepDisplay(bool sleep)
 float
 HwComposerBackend_v20::refreshRate()
 {
-    // TODO: Implement new hwc 1.1 querying of vsync period per-display
-    //
-    // from hwcomposer_defs.h:
-    // "This query is not used for HWC_DEVICE_API_VERSION_1_1 and later.
-    //  Instead, the per-display attribute HWC_DISPLAY_VSYNC_PERIOD is used."
-    return 60.0;
+    float value = (float)hwc2_compat_display_get_active_config(hwc2_primary_display)->vsyncPeriod;
+
+    value = (1000000000.0 / value);
+
+    // make sure the value is "reasonable", otherwise fallback to 60.0.
+    return (value > 0 && value <= 1000.0) ? value : 60.0;
+}
+
+bool
+HwComposerBackend_v20::getScreenSizes(int *width, int *height, float *physical_width, float *physical_height)
+{
+    HWC2DisplayConfig *config = hwc2_compat_display_get_active_config(hwc2_primary_display);
+
+    // should not happen
+    if (!config) return false;
+
+    int dpi_x = config->dpiX;
+    int dpi_y = config->dpiY;
+
+    *width = config->width;
+    *height = config->height;
+
+    if (dpi_x == 0 || dpi_y == 0 || *width == 0 || *height == 0) {
+        qWarning() << "failed to read screen size from hwc1.x backend";
+        return false;
+    }
+
+    *physical_width = (((float)*width) * 25.4) / (float)dpi_x;
+    *physical_height = (((float)*height) * 25.4) / (float)dpi_y;
+
+    return true;
 }
 
 void HwComposerBackend_v20::timerEvent(QTimerEvent *e)

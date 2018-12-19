@@ -46,11 +46,13 @@
 #include <QSizeF>
 #include <QSize>
 
+class HwComposerBackend;
+
 QT_BEGIN_NAMESPACE
 
 class HwComposerScreenInfo {
 public:
-    HwComposerScreenInfo();
+    HwComposerScreenInfo(HwComposerBackend *backend);
 
     QSizeF physicalScreenSize() const { return m_physicalScreenSize; }
     QSize screenSize() const { return m_screenSize; }

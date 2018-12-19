@@ -40,6 +40,7 @@
 ****************************************************************************/
 
 #include "hwcomposer_screeninfo.h"
+#include "hwcomposer_backend.h"
 
 #include <private/qmath_p.h>
 #include <private/qcore_unix_p.h>
@@ -205,13 +206,48 @@ private:
     int m_depth;
 };
 
+class HwComposerScreenInfoHWCSource {
+public:
+    HwComposerScreenInfoHWCSource(HwComposerBackend *backend) {
+        m_have_values = backend->getScreenSizes(&m_width, &m_height, &m_physicalWidth, &m_physicalHeight);
+        m_depth = 32;
+    }
+
+    QSizeF physicalScreenSize()
+    {
+        return QSizeF(m_physicalWidth, m_physicalHeight);
+    }
+
+    QSize screenSize()
+    {
+        return QSize(m_width, m_height);
+    }
+
+    int screenDepth()
+    {
+        return m_depth;
+    }
+
+    bool isValid()
+    {
+        return m_have_values;
+    }
+
+private:
+    float m_physicalWidth;
+    float m_physicalHeight;
+    int m_width;
+    int m_height;
+    int m_depth;
+    bool m_have_values;
+};
 
 } /* empty namespace */
 
 
 QT_BEGIN_NAMESPACE
 
-HwComposerScreenInfo::HwComposerScreenInfo()
+HwComposerScreenInfo::HwComposerScreenInfo(HwComposerBackend *backend)
 {
     /**
      * Look up the values in the following order of preference:
@@ -220,12 +256,15 @@ HwComposerScreenInfo::HwComposerScreenInfo()
      *  2. fbdev via FBIOGET_VSCREENINFO is preferred otherwise
      *  3. Fallback values (with warnings) if 1. and 2. fail
      **/
+    HwComposerScreenInfoHWCSource hwcSource(backend);
     HwComposerScreenInfoEnvironmentSource envSource;
     HwComposerScreenInfoFbDevSource fbdevSource;
     HwComposerScreenInfoFallbackSource fallbackSource;
 
     if (envSource.hasScreenSize()) {
         m_screenSize = envSource.screenSize();
+    } else if (hwcSource.isValid()) {
+        m_screenSize = hwcSource.screenSize();
     } else if (fbdevSource.isValid()) {
         m_screenSize = fbdevSource.screenSize();
     } else {
@@ -234,6 +273,8 @@ HwComposerScreenInfo::HwComposerScreenInfo()
 
     if (envSource.hasPhysicalScreenSize()) {
         m_physicalScreenSize = envSource.physicalScreenSize();
+    } else if (hwcSource.isValid()) {
+        m_physicalScreenSize = hwcSource.physicalScreenSize();
     } else if (fbdevSource.isValid()) {
         m_physicalScreenSize = fbdevSource.physicalScreenSize();
     } else {
@@ -242,6 +283,8 @@ HwComposerScreenInfo::HwComposerScreenInfo()
 
     if (envSource.hasScreenDepth()) {
         m_screenDepth = envSource.screenDepth();
+    } else if (hwcSource.isValid()) {
+        m_screenDepth = hwcSource.screenDepth();
     } else if (fbdevSource.isValid()) {
         m_screenDepth = fbdevSource.screenDepth();
     } else {

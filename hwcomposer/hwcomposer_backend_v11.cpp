@@ -381,15 +381,80 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
     }
 }
 
+int HwComposerBackend_v11::getSingleAttribute(uint32_t attribute)
+{
+    uint32_t config;
+
+    if (hwc_version == HWC_DEVICE_API_VERSION_1_1
+#ifdef HWC_DEVICE_API_VERSION_1_2
+        || hwc_version == HWC_DEVICE_API_VERSION_1_2
+#endif
+#ifdef HWC_DEVICE_API_VERSION_1_3
+        || hwc_version == HWC_DEVICE_API_VERSION_1_3
+#endif
+)
+    {
+        /* 1.3 or lower, currently active config is the first config */
+        size_t numConfigs = 1;
+        hwc_device->getDisplayConfigs(hwc_device, 0, &config, &numConfigs);
+    }
+#ifdef HWC_DEVICE_API_VERSION_1_4
+    else {
+        /* 1.4 or higher */
+        config = hwc_device->getActiveConfig(hwc_device, 0);
+    }
+#endif
+
+    const uint32_t attributes[] = {
+        attribute,
+        HWC_DISPLAY_NO_ATTRIBUTE,
+    };
+
+    int32_t values[] = {
+        0,
+        0,
+    };
+
+    hwc_device->getDisplayAttributes(hwc_device, 0, config, attributes, values);
+
+    for (unsigned int i = 0; i < sizeof(attributes) / sizeof(uint32_t); i++) {
+        if (attributes[i] == attribute) {
+            return values[i];
+        }
+    }
+
+    return 0;
+}
+
 float
 HwComposerBackend_v11::refreshRate()
 {
-    // TODO: Implement new hwc 1.1 querying of vsync period per-display
-    //
-    // from hwcomposer_defs.h:
-    // "This query is not used for HWC_DEVICE_API_VERSION_1_1 and later.
-    //  Instead, the per-display attribute HWC_DISPLAY_VSYNC_PERIOD is used."
-    return 60.0;
+    float value = (float)getSingleAttribute(HWC_DISPLAY_VSYNC_PERIOD);
+
+    value = (1000000000.0 / value);
+
+    // make sure the value is "reasonable", otherwise fallback to 60.0.
+    return (value > 0 && value <= 1000) ? value : 60.0;
+}
+
+bool
+HwComposerBackend_v11::getScreenSizes(int *width, int *height, float *physical_width, float *physical_height)
+{
+    int dpi_x = getSingleAttribute(HWC_DISPLAY_DPI_X) / 1000;
+    int dpi_y = getSingleAttribute(HWC_DISPLAY_DPI_Y) / 1000;
+
+    *width = getSingleAttribute(HWC_DISPLAY_WIDTH);
+    *height = getSingleAttribute(HWC_DISPLAY_HEIGHT);
+
+    if (dpi_x == 0 || dpi_y == 0 || *width == 0 || *height == 0) {
+        qWarning() << "failed to read screen size from hwc1.x backend";
+        return false;
+    }
+
+    *physical_width = (((float)*width) * 25.4) / (float)dpi_x;
+    *physical_height = (((float)*height) * 25.4) / (float)dpi_y;
+
+    return true;
 }
 
 void HwComposerBackend_v11::timerEvent(QTimerEvent *e)

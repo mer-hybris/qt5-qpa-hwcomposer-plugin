@@ -71,7 +71,7 @@ static void exit_qt_gracefully(int sig)
 }
 
 HwComposerContext::HwComposerContext()
-    : info(new HwComposerScreenInfo())
+    : info(NULL)
     , backend(NULL)
     , display_off(false)
     , window_created(false)
@@ -92,6 +92,8 @@ HwComposerContext::HwComposerContext()
     HWC_PLUGIN_ASSERT_NOT_NULL(backend);
 
     fps = backend->refreshRate();
+
+    info = new HwComposerScreenInfo(backend);
 }
 
 HwComposerContext::~HwComposerContext()
