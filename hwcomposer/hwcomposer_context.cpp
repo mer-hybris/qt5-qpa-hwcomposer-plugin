@@ -198,6 +198,9 @@ bool HwComposerContext::requestUpdate(QEglFSWindow *window)
     return false;
 }
 
-
+int *HwComposerContext::releaseFenceFd()
+{
+    return backend->releaseFenceFd();
+}
 
 QT_END_NAMESPACE

@@ -57,12 +57,15 @@ extern "C" void *android_dlsym(void *handle, const char *symbol);
 extern "C" int android_dlclose(void *handle);
 
 HwComposerBackend::HwComposerBackend(hw_module_t *hwc_module, void *libmsf)
-    : hwc_module(hwc_module), libminisf(libmsf)
+    : hwc_module(hwc_module), libminisf(libmsf), m_releaseFenceFd(-1)
 {
 }
 
 HwComposerBackend::~HwComposerBackend()
 {
+    if (m_releaseFenceFd != -1) {
+        close(m_releaseFenceFd);
+    }
     if (libminisf) {
         android_dlclose(libminisf);
     }

@@ -113,12 +113,15 @@ public:
 
     virtual bool requestUpdate(QEglFSWindow *) { return false; }
 
+    int *releaseFenceFd() { return &m_releaseFenceFd; }
+
 protected:
     HwComposerBackend(hw_module_t *hwc_module, void *libmsf);
     virtual ~HwComposerBackend();
 
     hw_module_t *hwc_module;
     void *libminisf;
+    int m_releaseFenceFd;
 };
 
 #endif /* HWCOMPOSER_BACKEND_H */

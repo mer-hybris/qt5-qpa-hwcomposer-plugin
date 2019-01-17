@@ -215,6 +215,8 @@ void *QEglFSIntegration::nativeResourceForWindow(const QByteArray &resource, QWi
             return static_cast<QEglFSScreen *>(window->handle()->screen())->display();
         else
             return static_cast<QEglFSScreen *>(mScreen)->display();
+    } else if (lowerCaseResource == "releasefencefd") {
+        return mHwc->releaseFenceFd();
     }
 
     return 0;

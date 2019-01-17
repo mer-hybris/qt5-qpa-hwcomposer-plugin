@@ -84,6 +84,8 @@ public:
 
     bool requestUpdate(QEglFSWindow *window);
 
+    int *releaseFenceFd();
+
 private:
     HwComposerScreenInfo *info;
     HwComposerBackend *backend;

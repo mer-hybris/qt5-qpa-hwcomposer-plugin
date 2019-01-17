@@ -97,6 +97,7 @@ class HWComposer : public HWComposerNativeWindow
         hwc_layer_1_t *fblayer;
         hwc_composer_device_1_t *hwcdevice;
         hwc_display_contents_1_t **mlist;
+        int * const releaseFd;
         int num_displays;
         bool m_syncBeforeSet;
     protected:
@@ -106,17 +107,18 @@ class HWComposer : public HWComposerNativeWindow
 
     HWComposer(unsigned int width, unsigned int height, unsigned int format,
             hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList,
-            hwc_layer_1_t *layer, int num_displays);
+            hwc_layer_1_t *layer, int num_displays, int *releasefd);
     void set();
 };
 
 HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int format,
         hwc_composer_device_1_t *device, hwc_display_contents_1_t **mList,
-        hwc_layer_1_t *layer, int num_displays)
+        hwc_layer_1_t *layer, int num_displays, int *releaseFd)
     : HWComposerNativeWindow(width, height, format)
     , fblayer(layer)
     , hwcdevice(device)
     , mlist(mList)
+    , releaseFd(releaseFd)
     , num_displays(num_displays)
 {
     int bufferCount = qBound(2, qgetenv("QPA_HWC_BUFFER_COUNT").toInt(), 8);
@@ -159,6 +161,11 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
     QPA_HWC_TIMING_SAMPLE(setTime);
 
     setFenceBufferFd(buffer, fblayer->releaseFenceFd);
+
+    if (*releaseFd != -1) {
+        close(*releaseFd);
+    }
+    *releaseFd = fblayer->releaseFenceFd != -1 ? dup(fblayer->releaseFenceFd) : -1;
 
     if (mlist[0]->retireFenceFd != -1) {
         close(mlist[0]->retireFenceFd);
@@ -305,7 +312,8 @@ HwComposerBackend_v11::createWindow(int width, int height)
 
 
     HWComposer *hwc_win = new HWComposer(width, height, HAL_PIXEL_FORMAT_RGBA_8888,
-                                         hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays);
+                                         hwc_device, hwc_mList, &hwc_list->hwLayers[1], num_displays,
+                                         &m_releaseFenceFd);
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 

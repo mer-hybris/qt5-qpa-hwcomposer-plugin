@@ -108,6 +108,7 @@ class HWC2Window : public HWComposerNativeWindow
     private:
         hwc2_compat_layer_t *layer;
         hwc2_compat_display_t *hwcDisplay;
+        int * const releaseFd;
         int lastPresentFence = -1;
         bool m_syncBeforeSet;
     protected:
@@ -116,15 +117,16 @@ class HWC2Window : public HWComposerNativeWindow
     public:
 
         HWC2Window(unsigned int width, unsigned int height, unsigned int format,
-                hwc2_compat_display_t *display, hwc2_compat_layer_t *layer);
+                hwc2_compat_display_t *display, hwc2_compat_layer_t *layer,
+                int *releaseFd);
         void set();
 };
 
 HWC2Window::HWC2Window(unsigned int width, unsigned int height,
                     unsigned int format, hwc2_compat_display_t* display,
-                    hwc2_compat_layer_t *layer) :
+                    hwc2_compat_layer_t *layer, int *releaseFd) :
                     HWComposerNativeWindow(width, height, format),
-                    layer(layer), hwcDisplay(display)
+                    layer(layer), hwcDisplay(display), releaseFd(releaseFd)
 {
     int bufferCount = qgetenv("QPA_HWC_BUFFER_COUNT").toInt();
     if (bufferCount)
@@ -205,11 +207,20 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
         return;
     }
 
+    if (*releaseFd != -1) {
+        close(*releaseFd);
+    }
+
     int fenceFd = hwc2_compat_out_fences_get_fence(fences, layer);
-    if (fenceFd != -1)
+    if (fenceFd != -1) {
         setFenceBufferFd(buffer, fenceFd);
-    else if (presentFence != -1)
+        *releaseFd = dup(fenceFd);
+    } else if (presentFence != -1) {
         setFenceBufferFd(buffer, presentFence);
+        *releaseFd = dup(presentFence);
+    } else {
+        *releaseFd = -1;
+    }
 
     hwc2_compat_out_fences_destroy(fences);
 
@@ -288,7 +299,8 @@ HwComposerBackend_v20::createWindow(int width, int height)
 
     HWC2Window *hwc_win = new HWC2Window(width, height,
                                          HAL_PIXEL_FORMAT_RGBA_8888,
-                                         hwc2_primary_display, layer);
+                                         hwc2_primary_display, layer,
+                                         &m_releaseFenceFd);
 
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
