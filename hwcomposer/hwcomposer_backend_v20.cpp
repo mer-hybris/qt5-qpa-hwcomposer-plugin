@@ -108,7 +108,6 @@ class HWC2Window : public HWComposerNativeWindow
     private:
         hwc2_compat_layer_t *layer;
         hwc2_compat_display_t *hwcDisplay;
-        int lastPresentFence = -1;
         bool m_syncBeforeSet;
     protected:
         void present(HWComposerNativeWindowBuffer *buffer);
@@ -187,33 +186,9 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
     hwc2_compat_display_present(hwcDisplay, &presentFence);
     QSystrace::end("graphics", "QPA::present", "");
 
-    if (error != HWC2_ERROR_NONE) {
-        qDebug("presentAndGetReleaseFences: failed for display %d: %d",
-              displayId, error);
-        return;
-    }
-
     QPA_HWC_TIMING_SAMPLE(setTime);
 
-    hwc2_compat_out_fences_t* fences;
-    error = hwc2_compat_display_get_release_fences(
-        hwcDisplay, &fences);
-
-    if (error != HWC2_ERROR_NONE) {
-        qDebug("presentAndGetReleaseFences: Failed to get release fences "
-              "for display %d: %d", displayId, error);
-        return;
-    }
-
-    int fenceFd = hwc2_compat_out_fences_get_fence(fences, layer);
-    if (fenceFd != -1)
-        setFenceBufferFd(buffer, fenceFd);
-    else if (presentFence != -1)
-        setFenceBufferFd(buffer, presentFence);
-
-    hwc2_compat_out_fences_destroy(fences);
-
-    lastPresentFence = presentFence;
+    setFenceBufferFd(buffer, presentFence);
 }
 
 int HwComposerBackend_v20::composerSequenceId = 0;
@@ -277,7 +252,7 @@ HwComposerBackend_v20::createWindow(int width, int height)
     // would leak stuff, and we want to avoid that for obvious reasons.
     HWC_PLUGIN_EXPECT_NULL(hwc2_primary_layer);
 
-    hwc2_compat_layer_t* layer = hwc2_primary_layer = 
+    hwc2_compat_layer_t* layer = hwc2_primary_layer =
         hwc2_compat_display_create_layer(hwc2_primary_display);
 
     hwc2_compat_layer_set_composition_type(layer, HWC2_COMPOSITION_CLIENT);
