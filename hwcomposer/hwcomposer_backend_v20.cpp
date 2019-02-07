@@ -108,6 +108,7 @@ class HWC2Window : public HWComposerNativeWindow
     private:
         hwc2_compat_layer_t *layer;
         hwc2_compat_display_t *hwcDisplay;
+        int lastPresentFence = -1;
         bool m_syncBeforeSet;
     protected:
         void present(HWComposerNativeWindowBuffer *buffer);
@@ -116,6 +117,7 @@ class HWC2Window : public HWComposerNativeWindow
 
         HWC2Window(unsigned int width, unsigned int height, unsigned int format,
                 hwc2_compat_display_t *display, hwc2_compat_layer_t *layer);
+        ~HWC2Window();
         void set();
 };
 
@@ -133,6 +135,13 @@ HWC2Window::HWC2Window(unsigned int width, unsigned int height,
         bufferCount = 3;
     setBufferCount(bufferCount);
     m_syncBeforeSet = qEnvironmentVariableIsSet("QPA_HWC_SYNC_BEFORE_SET");
+}
+
+HWC2Window::~HWC2Window()
+{
+    if (lastPresentFence != -1) {
+        close(lastPresentFence);
+    }
 }
 
 void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
@@ -182,11 +191,18 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
     QSystrace::end("graphics", "QPA::set_client_target", "");
 
     QSystrace::begin("graphics", "QPA::present", "");
-    int presentFence;
+    int presentFence = -1;
     hwc2_compat_display_present(hwcDisplay, &presentFence);
     QSystrace::end("graphics", "QPA::present", "");
 
     QPA_HWC_TIMING_SAMPLE(setTime);
+
+    if (lastPresentFence != -1) {
+        sync_wait(lastPresentFence, -1);
+        close(lastPresentFence);
+    }
+
+    lastPresentFence = presentFence != -1 ? dup(presentFence) : -1;
 
     setFenceBufferFd(buffer, presentFence);
 }
