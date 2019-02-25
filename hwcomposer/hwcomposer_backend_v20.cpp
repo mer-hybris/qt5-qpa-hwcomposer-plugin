@@ -51,6 +51,8 @@
 
 #include <private/qsystrace_p.h>
 
+#include <inttypes.h>
+
 // #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
 // #define QPA_HWC_TIMING

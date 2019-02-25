@@ -49,7 +49,7 @@ packagesExist(hwcomposer-egl) {
     DEFINES += HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 }
 
-packagesExist(libhwc2) {
+exists(/usr/lib/droid-devel/droid-headers/hardware/hwcomposer2.h) {
     PKGCONFIG += libhwc2
     DEFINES += HWC_PLUGIN_HAVE_HWCOMPOSER2_API
     SOURCES += hwcomposer_backend_v20.cpp
