@@ -52,6 +52,8 @@
 
 #include <QBasicTimer>
 
+#include <pthread.h>
+
 class HwcProcs_v20;
 class QWindow;
 
@@ -89,6 +91,12 @@ private:
     QBasicTimer m_vsyncTimeout;
     QSet<QWindow *> m_pendingUpdate;
     HwcProcs_v20 *procs;
+
+    void setVSyncEnabledLocked(bool enable);
+
+public:
+    static pthread_mutex_t mVSyncMutex;
+    static bool mVSyncEnabled;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */

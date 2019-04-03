@@ -68,6 +68,9 @@ static qint64 setTime;
 #define QPA_HWC_TIMING_SAMPLE(variable)
 #endif
 
+pthread_mutex_t HwComposerBackend_v20::mVSyncMutex = PTHREAD_MUTEX_INITIALIZER;
+bool HwComposerBackend_v20::mVSyncEnabled;
+
 struct HwcProcs_v20 : public HWC2EventListener
 {
     HwComposerBackend_v20 *backend;
@@ -76,15 +79,21 @@ struct HwcProcs_v20 : public HWC2EventListener
 void hwc2_callback_vsync(HWC2EventListener* listener, int32_t sequenceId,
                          hwc2_display_t display, int64_t timestamp)
 {
-    static int counter = 0;
-    ++counter;
-    if (counter % 2)
-        QSystrace::begin("graphics", "QPA::vsync", "");
-    else
-        QSystrace::end("graphics", "QPA::vsync", "");
+    pthread_mutex_lock(&HwComposerBackend_v20::mVSyncMutex);
 
-    QCoreApplication::postEvent(static_cast<const HwcProcs_v20 *>(listener)->backend,
-                                new QEvent(QEvent::User));
+    if (HwComposerBackend_v20::mVSyncEnabled) {
+        static int counter = 0;
+        ++counter;
+        if (counter % 2)
+            QSystrace::begin("graphics", "QPA::vsync", "");
+        else
+            QSystrace::end("graphics", "QPA::vsync", "");
+
+        QCoreApplication::postEvent(static_cast<const HwcProcs_v20 *>(listener)->backend,
+                                    new QEvent(QEvent::User));
+    }
+
+    pthread_mutex_unlock(&HwComposerBackend_v20::mVSyncMutex);
 }
 
 void hwc2_callback_hotplug(HWC2EventListener* listener, int32_t sequenceId,
@@ -244,7 +253,9 @@ HwComposerBackend_v20::HwComposerBackend_v20(hw_module_t *hwc_module, void *libm
 
 HwComposerBackend_v20::~HwComposerBackend_v20()
 {
-    hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_DISABLE);
+    setVSyncEnabledLocked(false);
+
+    hwc2_compat_display_set_power_mode(hwc2_primary_display, HWC2_POWER_MODE_DOZE);
 
     // Close the hwcomposer handle
     if (!qgetenv("QPA_HWC_WORKAROUNDS").split(',').contains("no-close-hwc"))
@@ -320,7 +331,7 @@ HwComposerBackend_v20::sleepDisplay(bool sleep)
         // screen has been turned off. Doing so leads to logcat errors being
         // logged.
         m_vsyncTimeout.stop();
-        hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_DISABLE);
+        setVSyncEnabledLocked(false);
 
         hwc2_compat_display_set_power_mode(hwc2_primary_display, HWC2_POWER_MODE_OFF);
     } else {
@@ -328,7 +339,7 @@ HwComposerBackend_v20::sleepDisplay(bool sleep)
 
         // If we have pending updates, make sure those start happening now..
         if (m_pendingUpdate.size()) {
-            hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_ENABLE);
+            setVSyncEnabledLocked(true);
             m_vsyncTimeout.start(50, this);
         }
     }
@@ -373,7 +384,7 @@ HwComposerBackend_v20::getScreenSizes(int *width, int *height, float *physical_w
 void HwComposerBackend_v20::timerEvent(QTimerEvent *e)
 {
     if (e->timerId() == m_vsyncTimeout.timerId()) {
-        hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_DISABLE);
+        setVSyncEnabledLocked(false);
         m_vsyncTimeout.stop();
         // When waking up, we might get here as a result of requesting vsync events
         // before the hwc is up and running. If we're timing out while still waiting
@@ -417,7 +428,7 @@ bool HwComposerBackend_v20::requestUpdate(QEglFSWindow *window)
     if (m_vsyncTimeout.isActive()) {
         m_vsyncTimeout.stop();
     } else {
-        hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_ENABLE);
+        setVSyncEnabledLocked(true);
     }
     m_vsyncTimeout.start(50, this);
     m_pendingUpdate.insert(window->window());
@@ -429,6 +440,21 @@ void HwComposerBackend_v20::onHotplugReceived(int32_t sequenceId,
                                         bool primaryDisplay)
 {
     hwc2_compat_device_on_hotplug(hwc2_device, display, connected);
+}
+
+void HwComposerBackend_v20::setVSyncEnabledLocked(bool enable)
+{
+    pthread_mutex_lock(&mVSyncMutex);
+
+    mVSyncEnabled = enable;
+
+    if (enable) {
+        hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_ENABLE);
+    } else {
+        hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_DISABLE);
+    }
+
+    pthread_mutex_unlock(&mVSyncMutex);
 }
 
 // #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
