@@ -246,6 +246,8 @@ HwComposerBackend_v20::~HwComposerBackend_v20()
 {
     hwc2_compat_display_set_vsync_enabled(hwc2_primary_display, HWC2_VSYNC_DISABLE);
 
+    sleep(1);
+
     // Close the hwcomposer handle
     if (!qgetenv("QPA_HWC_WORKAROUNDS").split(',').contains("no-close-hwc"))
         free(hwc2_device);
