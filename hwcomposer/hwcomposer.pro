@@ -39,6 +39,10 @@ enable-sensors {
     DEFINES += WITH_SENSORS
 }
 
+enable-systrace {
+    DEFINES += WITH_SYSTRACE
+}
+
 DEFINES += QEGL_EXTRA_DEBUG
 CONFIG += egl qpa/genericunixfontdatabase
 
