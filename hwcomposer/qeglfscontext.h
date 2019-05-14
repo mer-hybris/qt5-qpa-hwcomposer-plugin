@@ -42,8 +42,16 @@
 #ifndef QEGLFSCONTEXT_H
 #define QEGLFSCONTEXT_H
 
+#include <QtGlobal>
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+
+#include <QtEglSupport/private/qeglconvenience_p.h>
+#include <QtEglSupport/private/qeglplatformcontext_p.h>
+#else
 #include <QtPlatformSupport/private/qeglconvenience_p.h>
 #include <QtPlatformSupport/private/qeglplatformcontext_p.h>
+#endif
 
 #include "hwcomposer_context.h"
 

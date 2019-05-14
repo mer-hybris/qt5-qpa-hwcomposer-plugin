@@ -47,12 +47,19 @@
 #ifndef HWCOMPOSER_CONTEXT_H
 #define HWCOMPOSER_CONTEXT_H
 
+#include <QtGlobal>
+
 #include <qpa/qplatformintegration.h>
 #include <qpa/qplatformscreen.h>
 #include <QtGui/QSurfaceFormat>
 #include <QtGui/QImage>
 #include <EGL/egl.h>
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+#include <QtEglSupport/private/qeglplatformcontext_p.h>
+#else
 #include <QtPlatformSupport/private/qeglplatformcontext_p.h>
+#endif
 
 QT_BEGIN_NAMESPACE
 

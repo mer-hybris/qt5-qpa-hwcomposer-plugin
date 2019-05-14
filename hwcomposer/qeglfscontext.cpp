@@ -42,7 +42,13 @@
 #include "qeglfscontext.h"
 #include "qeglfswindow.h"
 #include "qeglfsintegration.h"
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+#include <QtEglSupport/private/qeglpbuffer_p.h>
+#else
 #include <QtPlatformSupport/private/qeglpbuffer_p.h>
+#endif
+
 #include <QtGui/QSurface>
 #include <QtDebug>
 

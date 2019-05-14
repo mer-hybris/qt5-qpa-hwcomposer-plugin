@@ -40,9 +40,9 @@
 ****************************************************************************/
 #include <android-version.h>
 #if ANDROID_VERSION_MAJOR <= 4
-#include "hwcomposer_backend_v0.h"
+#include <hardware/hwcomposer_defs.h>
 #ifdef HWC_DEVICE_API_VERSION_0_1
-
+#include "hwcomposer_backend_v0.h"
 
 HwComposerBackend_v0::HwComposerBackend_v0(hw_module_t *hwc_module, hw_device_t *hw_device, void *libminisf)
     : HwComposerBackend(hwc_module, libminisf)

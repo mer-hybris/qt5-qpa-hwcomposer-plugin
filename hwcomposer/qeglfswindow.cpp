@@ -42,7 +42,11 @@
 #include "qeglfswindow.h"
 #include <qpa/qwindowsysteminterface.h>
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+#include <QtEglSupport/private/qeglconvenience_p.h>
+#else
 #include <QtPlatformSupport/private/qeglconvenience_p.h>
+#endif
 
 #include <QtDebug>
 
