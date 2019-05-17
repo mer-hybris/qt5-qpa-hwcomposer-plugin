@@ -99,6 +99,7 @@ class HWComposer : public HWComposerNativeWindow
         hwc_display_contents_1_t **mlist;
         int num_displays;
         bool m_syncBeforeSet;
+        bool m_waitOnRetireFence;
     protected:
         void present(HWComposerNativeWindowBuffer *buffer);
 
@@ -122,6 +123,7 @@ HWComposer::HWComposer(unsigned int width, unsigned int height, unsigned int for
     int bufferCount = qBound(2, qgetenv("QPA_HWC_BUFFER_COUNT").toInt(), 8);
     setBufferCount(bufferCount);
     m_syncBeforeSet = qEnvironmentVariableIsSet("QPA_HWC_SYNC_BEFORE_SET");
+    m_waitOnRetireFence = qEnvironmentVariableIsSet("QPA_HWC_WAIT_ON_RETIRE_FENCE");
 }
 
 void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
@@ -132,6 +134,13 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 
     fblayer->handle = buffer->handle;
     fblayer->releaseFenceFd = -1;
+
+    int retireFenceFd = -1;
+
+    if (m_waitOnRetireFence) {
+        retireFenceFd = mlist[0]->retireFenceFd;
+        mlist[0]->retireFenceFd = -1;
+    }
 
     if (m_syncBeforeSet) {
         int acqFd = getFenceBufferFd(buffer);
@@ -160,7 +169,10 @@ void HWComposer::present(HWComposerNativeWindowBuffer *buffer)
 
     setFenceBufferFd(buffer, fblayer->releaseFenceFd);
 
-    if (mlist[0]->retireFenceFd != -1) {
+    if (m_waitOnRetireFence && retireFenceFd != -1) {
+        sync_wait(retireFenceFd, -1);
+        close(retireFenceFd);
+    } else if (!m_waitOnRetireFence && mlist[0]->retireFenceFd != -1) {
         close(mlist[0]->retireFenceFd);
         mlist[0]->retireFenceFd = -1;
     }
@@ -476,7 +488,7 @@ void HwComposerBackend_v11::timerEvent(QTimerEvent *e)
 bool HwComposerBackend_v11::event(QEvent *e)
 {
     if (e->type() == QEvent::User) {
-        static int idleTime = qBound(0, qgetenv("QPA_HWC_IDLE_TIME").toInt(), 100);
+        static int idleTime = qBound(5, qgetenv("QPA_HWC_IDLE_TIME").toInt(), 100);
         if (!m_deliverUpdateTimeout.isActive())
             m_deliverUpdateTimeout.start(idleTime, this);
         return true;
