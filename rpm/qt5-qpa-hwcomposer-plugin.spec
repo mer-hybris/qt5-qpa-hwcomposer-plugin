@@ -40,8 +40,7 @@ hwcomposer for composing content onto the screen.
 %build
 export QTDIR=/usr/share/qt5
 cd hwcomposer
-# Qt is built with mesa, which has gl3.h. We're built with hybris which doesn't include gl3.h, so explicitly disable es3
-%qmake5 DEFINES+=QT_NO_OPENGL_ES_3
+%qmake5
 make %{_smp_mflags}
 
 %install
