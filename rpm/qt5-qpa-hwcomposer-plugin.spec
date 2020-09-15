@@ -1,11 +1,7 @@
 Name:       qt5-qpa-hwcomposer-plugin
 Summary:    Qt 5 QPA hwcomposer plugin
 Version:    5.6.2.1
-# The following two lines can be removed after next stop release.
-Provides:   qt5-qpa-hwcomposer-plugin-sbj >= %{version}
-Obsoletes:  qt5-qpa-hwcomposer-plugin-sbj < %{version}
 Release:    1
-Group:      Qt/Qt
 License:    LGPLv2.1 with exception or GPLv3
 URL:        http://github.com/mer-hybris/qt5-qpa-hwcomposer-plugin
 Source0:    %{name}-%{version}.tar.bz2
@@ -35,17 +31,14 @@ This package contains a Qt 5 QPA plugin using libhybris' Droid
 hwcomposer for composing content onto the screen.
 
 %prep
-%setup -q
+%autosetup -n %{name}-%{version}/hwcomposer
 
 %build
 export QTDIR=/usr/share/qt5
-cd hwcomposer
 %qmake5
-make %{_smp_mflags}
+%make_build
 
 %install
-rm -rf %{buildroot}
-cd hwcomposer
 %qmake5_install
 
 # doesn't exist on Qt 5.1, we don't currently care about this for 5.2

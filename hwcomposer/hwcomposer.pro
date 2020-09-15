@@ -3,6 +3,7 @@ TARGET = hwcomposer
 PLUGIN_TYPE = platforms
 PLUGIN_CLASS_NAME = QEglFShwcIntegrationPlugin
 load(qt_plugin)
+load(configure)
 
 INCLUDEPATH += .
 DEPENDPATH += .
@@ -49,7 +50,7 @@ packagesExist(hwcomposer-egl) {
     DEFINES += HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 }
 
-exists(/usr/lib/droid-devel/droid-headers/hardware/hwcomposer2.h) {
+qtCompileTest(hwcomposer2) {
     PKGCONFIG += libhwc2
     DEFINES += HWC_PLUGIN_HAVE_HWCOMPOSER2_API
     SOURCES += hwcomposer_backend_v20.cpp
