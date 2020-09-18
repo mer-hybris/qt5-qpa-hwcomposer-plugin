@@ -40,6 +40,7 @@
 ****************************************************************************/
 
 #include "hwcomposer_screeninfo.h"
+#include "hwcomposer_backend.h"
 
 #include <private/qmath_p.h>
 #include <private/qcore_unix_p.h>
@@ -248,10 +249,10 @@ HwComposerScreenInfo::HwComposerScreenInfo()
         m_screenDepth = fallbackSource.screenDepth();
     }
 
-    qDebug() << "EGLFS: Screen Info";
-    qDebug() << " - Physical size:" << m_physicalScreenSize;
-    qDebug() << " - Screen size:" << m_screenSize;
-    qDebug() << " - Screen depth:" << m_screenDepth;
+    qCDebug(QPA_LOG_HWC) << "EGLFS: Screen Info";
+    qCDebug(QPA_LOG_HWC) << " - Physical size:" << m_physicalScreenSize;
+    qCDebug(QPA_LOG_HWC) << " - Screen size:" << m_screenSize;
+    qCDebug(QPA_LOG_HWC) << " - Screen depth:" << m_screenDepth;
 }
 
 QT_END_NAMESPACE

@@ -3,8 +3,6 @@
 ** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
 **
-** Based on qeglfshooks.h, part of the plugins of the Qt Toolkit.
-**
 ** Copyright (C) 2013 Jolla Ltd.
 ** Contact: Thomas Perl <thomas.perl@jolla.com>
 **
@@ -44,59 +42,24 @@
 **
 ****************************************************************************/
 
-#ifndef HWCOMPOSER_CONTEXT_H
-#define HWCOMPOSER_CONTEXT_H
+#include "eglfshwcwindow.h"
+#include "hwcomposer_backend.h"
 
-#include <qpa/qplatformintegration.h>
-#include <qpa/qplatformscreen.h>
-#include <QtGui/QSurfaceFormat>
-#include <QtGui/QImage>
-#include <EGL/egl.h>
-#include <QtPlatformSupport/private/qeglplatformcontext_p.h>
-
-QT_BEGIN_NAMESPACE
-
-class QEglFSContext;
-class HwComposerScreenInfo;
-class HwComposerBackend;
-
-namespace HwcInterface {
-    class Compositor;
+EglFsHwcWindow::EglFsHwcWindow(HwComposerBackend *hwc, QWindow *window)
+    : QEglFSWindow(window)
+    , m_hwc(hwc)
+{
 }
 
-class HwComposerContext
+EglFsHwcWindow::~EglFsHwcWindow()
 {
-public:
-    HwComposerContext();
-    ~HwComposerContext();
 
-    QSizeF physicalScreenSize() const;
-    QSize screenSize() const;
-    int screenDepth() const;
+}
 
-    QSurfaceFormat surfaceFormatFor(const QSurfaceFormat &inputFormat) const;
+void EglFsHwcWindow::requestUpdate()
+{
+    if (!m_hwc->requestUpdate(window())) {
+        QEglFSWindow::requestUpdate();
+    }
+}
 
-    EGLNativeDisplayType platformDisplay() const;
-    EGLNativeWindowType createNativeWindow(const QSurfaceFormat &format);
-    void destroyNativeWindow(EGLNativeWindowType window);
-
-    void swapToWindow(QEglFSContext *context, QPlatformSurface *surface);
-
-    void sleepDisplay(bool sleep);
-    qreal refreshRate() const;
-
-    HwcInterface::Compositor *hwcInterface() const;
-
-    bool requestUpdate(QWindow *window);
-
-private:
-    HwComposerScreenInfo *info;
-    HwComposerBackend *backend;
-    bool display_off;
-    bool window_created;
-    qreal fps;
-};
-
-QT_END_NAMESPACE
-
-#endif // HWCOMPOSER_CONTEXT_H
