@@ -49,7 +49,7 @@
 #include <QtCore/QCoreApplication>
 #include <private/qwindow_p.h>
 
-#include <private/qsystrace_p.h>
+#include "qsystrace_selector.h"
 
 #include <inttypes.h>
 
@@ -405,8 +405,16 @@ void HwComposerBackend_v20::handleVSyncEvent()
     QSet<QWindow *> pendingWindows = m_pendingUpdate;
     m_pendingUpdate.clear();
     foreach (QWindow *w, pendingWindows) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+        QPlatformWindow *platformWindow = w->handle();
+        if (!platformWindow)
+            continue;
+
+        platformWindow->deliverUpdateRequest();
+#else
         QWindowPrivate *wp = (QWindowPrivate *) QWindowPrivate::get(w);
         wp->deliverUpdateRequest();
+#endif
     }
 }
 

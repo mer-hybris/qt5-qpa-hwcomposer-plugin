@@ -28,6 +28,8 @@ HEADERS += hwcomposer_backend_v10.h
 SOURCES += hwcomposer_backend_v11.cpp
 HEADERS += hwcomposer_backend_v11.h
 
+HEADERS += qsystrace_selector.h
+
 versionAtLeast(QT_MINOR_VERSION, 8) {
     QT += core-private gui-private egl_support-private waylandcompositor-private dbus fontdatabase_support-private eventdispatcher_support-private theme_support-private
 } else {
