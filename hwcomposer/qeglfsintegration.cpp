@@ -46,12 +46,21 @@
 
 #include <QtGui/private/qguiapplication_p.h>
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+#include <QtFontDatabaseSupport/private/qgenericunixfontdatabase_p.h>
+#include <QtEventDispatcherSupport/private/qgenericunixeventdispatcher_p.h>
+#include <QtThemeSupport/private/qgenericunixthemes_p.h>
+#include <QtEglSupport/private/qeglconvenience_p.h>
+#include <QtEglSupport/private/qeglplatformcontext_p.h>
+#include <QtEglSupport/private/qeglpbuffer_p.h>
+#else
 #include <QtPlatformSupport/private/qgenericunixfontdatabase_p.h>
 #include <QtPlatformSupport/private/qgenericunixeventdispatcher_p.h>
 #include <QtPlatformSupport/private/qgenericunixthemes_p.h>
 #include <QtPlatformSupport/private/qeglconvenience_p.h>
 #include <QtPlatformSupport/private/qeglplatformcontext_p.h>
 #include <QtPlatformSupport/private/qeglpbuffer_p.h>
+#endif
 
 #include <qpa/qplatformwindow.h>
 #include <qpa/qplatformservices.h>
@@ -107,14 +116,20 @@ QEglFSIntegration::QEglFSIntegration()
     }
 
     mScreen = new QEglFSScreen(mHwc, mDisplay);
+#if QT_VERSION < QT_VERSION_CHECK(5, 13, 0)
     screenAdded(mScreen);
+#else
+    QWindowSystemInterface::handleScreenAdded(mScreen);
+#endif
 
     mInputContext = QPlatformInputContextFactory::create();
 }
 
 QEglFSIntegration::~QEglFSIntegration()
 {
-#if QT_VERSION >= 0x050500
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+    QWindowSystemInterface::handleScreenRemoved(mScreen);
+#elif QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
     destroyScreen(mScreen);
 #else
     delete mScreen;

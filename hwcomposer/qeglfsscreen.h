@@ -49,14 +49,23 @@
 
 #include <EGL/egl.h>
 
+#ifdef WITH_SENSORS
+class QOrientationSensor;
+#endif
 
 QT_BEGIN_NAMESPACE
 
 class QEglFSPageFlipper;
 class QPlatformOpenGLContext;
 
+#ifdef WITH_SENSORS
+class QEglFSScreen : public QObject, public QPlatformScreen //huh: FullScreenScreen ;) just to follow namespace
+{
+    Q_OBJECT
+#else
 class QEglFSScreen : public QPlatformScreen //huh: FullScreenScreen ;) just to follow namespace
 {
+#endif
 public:
     QEglFSScreen(HwComposerContext *hwc, EGLDisplay display);
     ~QEglFSScreen();
@@ -72,6 +81,10 @@ public:
 
     qreal refreshRate() const;
 
+#ifdef WITH_SENSORS
+    Qt::ScreenOrientation orientation() const;
+#endif
+
 #if 0
     QPlatformScreenPageFlipper *pageFlipper() const;
 #endif
@@ -80,6 +93,14 @@ private:
     HwComposerContext *m_hwc;
     QEglFSPageFlipper *m_pageFlipper;
     EGLDisplay m_dpy;
+#ifdef WITH_SENSORS
+    Qt::ScreenOrientation m_screenOrientation;
+    QOrientationSensor *m_orientationSensor;
+
+private Q_SLOTS:
+    void orientationReadingChanged();
+    void onStarted();
+#endif
 };
 
 QT_END_NAMESPACE

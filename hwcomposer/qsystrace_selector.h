@@ -1,9 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
-** Contact: http://www.qt-project.org/legal
-**
-** This file is part of the plugins of the Qt Toolkit.
+** This file is part of the hwcomposer plugin.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -39,43 +36,23 @@
 **
 ****************************************************************************/
 
-#ifndef QEGLFSCONTEXT_H
-#define QEGLFSCONTEXT_H
+#ifndef HWCOMPOSER_QSYSTRACE_SELECTOR_H
+#define HWCOMPOSER_QSYSTRACE_SELECTOR_H
 
-#include <QtGlobal>
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
-
-#include <QtEglSupport/private/qeglconvenience_p.h>
-#include <QtEglSupport/private/qeglplatformcontext_p.h>
+#ifdef WITH_SYSTRACE
+#include <private/qsystrace_p.h>
 #else
-#include <QtPlatformSupport/private/qeglconvenience_p.h>
-#include <QtPlatformSupport/private/qeglplatformcontext_p.h>
-#endif
-
-#include "hwcomposer_context.h"
-
-QT_BEGIN_NAMESPACE
-
-class QEglFSContext : public QEGLPlatformContext
+// Add dummy stub methods for QSysTrace
+namespace QSystrace
 {
-public:
-    QEglFSContext(HwComposerContext *hwc,
-            const QSurfaceFormat &format, QPlatformOpenGLContext *share, EGLDisplay display
-#if QT_VERSION < QT_VERSION_CHECK(5, 3, 0)
-            , EGLenum eglApi = EGL_OPENGL_ES_API);
-#else
-            );
-#endif
-    bool makeCurrent(QPlatformSurface *surface);
-    EGLSurface eglSurfaceForPlatformSurface(QPlatformSurface *surface);
-    void swapBuffers(QPlatformSurface *surface);
-private:
-    HwComposerContext *m_hwc;
-    EGLConfig m_config;
-    bool m_swapIntervalConfigured;
+    inline void begin(const char *module, const char *tracepoint, const char *message, ...) {}
+    inline void end(const char *module, const char *tracepoint, const char *message, ...) {}
+    inline void counter(const char *module, const char *tracepoint, const char *message, ...) {}
 };
+struct QSystraceEvent {
+    QSystraceEvent(const char *module, const char *tracepoint) {}
+};
+#endif
 
-QT_END_NAMESPACE
 
-#endif // QEGLFSCONTEXT_H
+#endif

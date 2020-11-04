@@ -48,7 +48,7 @@
 #include <QtCore/QCoreApplication>
 #include <private/qwindow_p.h>
 
-#include <private/qsystrace_p.h>
+#include "qsystrace_selector.h"
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
 
@@ -502,8 +502,16 @@ void HwComposerBackend_v11::handleVSyncEvent()
     QSet<QWindow *> pendingWindows = m_pendingUpdate;
     m_pendingUpdate.clear();
     foreach (QWindow *w, pendingWindows) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 12, 0))
+        QPlatformWindow *platformWindow = w->handle();
+        if (!platformWindow)
+            continue;
+
+        platformWindow->deliverUpdateRequest();
+#else
         QWindowPrivate *wp = (QWindowPrivate *) QWindowPrivate::get(w);
         wp->deliverUpdateRequest();
+#endif
     }
 }
 
