@@ -342,8 +342,10 @@ public:
     {
         //trace_fds(__func__);
 
+        hwc_layer_1_t *layer0 = getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER);
         hwc_layer_1_t *fblayer = getLayer(HWC_SCREEN_FRAMEBUFFER_TARGET_LAYER);
 
+        layer0->handle = handle;
         fblayer->handle = handle;
 
         if (g_unblanked_displays[id]) {
