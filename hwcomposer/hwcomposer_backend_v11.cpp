@@ -366,8 +366,9 @@ public:
         //trace_fds(__func__);
 
         // We assume the non-FB-target layer has its releaseFenceFd set to -1
-        HWC_PLUGIN_EXPECT_ZERO(getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER)->releaseFenceFd != -1);
+        //HWC_PLUGIN_EXPECT_ZERO(getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER)->releaseFenceFd != -1);
 
+        hwc_layer_1_t *layer0 = getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER);
         hwc_layer_1_t *fblayer = getLayer(HWC_SCREEN_FRAMEBUFFER_TARGET_LAYER);
 
         if (result == -1) {
@@ -384,7 +385,10 @@ public:
                 //sync_wait(fblayer->releaseFenceFd, -1); // Need to wait, too?
                 close(fblayer->releaseFenceFd);
             }
-
+        }
+        if (layer0->releaseFenceFd != -1) {
+            close(layer0->releaseFenceFd);
+            layer0->releaseFenceFd = -1;
         }
 
         fblayer->releaseFenceFd = -1;
