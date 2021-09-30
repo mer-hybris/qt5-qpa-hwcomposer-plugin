@@ -82,7 +82,7 @@ HwComposerBackend::create()
     // the hardware composer one. Therefor we rely on using the fbdev HYBRIS_EGLPLATFORM
     // here and use eglGetDisplay to initialize it.
     if (qEnvironmentVariableIsEmpty("QT_QPA_NO_FRAMEBUFFER_FIRST")) {
-	    eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        eglGetDisplay(EGL_DEFAULT_DISPLAY);
     }
 
     // A reason for calling this method here is to initialize the binder
@@ -94,13 +94,13 @@ HwComposerBackend::create()
     libminisf = android_dlopen("libminisf.so", RTLD_LAZY);
 
     if (libminisf) {
-	startMiniSurfaceFlinger = (void(*)(void))android_dlsym(libminisf, "startMiniSurfaceFlinger");
+        startMiniSurfaceFlinger = (void(*)(void))android_dlsym(libminisf, "startMiniSurfaceFlinger");
     }
 
     if (startMiniSurfaceFlinger) {
-	startMiniSurfaceFlinger();
+        startMiniSurfaceFlinger();
     } else {
-	fprintf(stderr, "libminisf is incompatible or missing. Can not possibly start the SurfaceFlinger service. If you're experiencing troubles with media try updating droidmedia (and/or this plugin).");
+        fprintf(stderr, "libminisf is incompatible or missing. Can not possibly start the SurfaceFlinger service. If you're experiencing troubles with media try updating droidmedia (and/or this plugin).");
     }
 
     // Open hardware composer

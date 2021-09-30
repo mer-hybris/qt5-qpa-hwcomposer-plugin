@@ -41,6 +41,7 @@
 
 #include "hwcomposer_backend_v10.h"
 
+#include <inttypes.h>
 #include <unistd.h>
 
 #ifdef HWC_DEVICE_API_VERSION_1_0
@@ -91,14 +92,14 @@ dump_display_contents(hwc_display_contents_1_t *contents)
     fprintf(stderr, "dpy = %p\n", contents->dpy);
     fprintf(stderr, "sur = %p\n", contents->sur);
     fprintf(stderr, "flags = %x\n", contents->flags);
-    fprintf(stderr, "numHwLayers = %d\n", contents->numHwLayers);
-    for (int i=0; i<contents->numHwLayers; i++) {
+    fprintf(stderr, "numHwLayers = %zu\n", contents->numHwLayers);
+    for (unsigned int i=0; i<contents->numHwLayers; i++) {
         hwc_layer_1_t *layer = &(contents->hwLayers[i]);
         fprintf(stderr, "Layer %d (%p):\n"
-                        "    type=%s, hints=%x, flags=%x, handle=%x, transform=%d, blending=%s\n"
+                        "    type=%s, hints=%x, flags=%x, handle=%" PRIxPTR ", transform=%d, blending=%s\n"
                         "    sourceCrop={%d, %d, %d, %d}, displayFrame={%d, %d, %d, %d}\n"
-                        "    visibleRegionScreen=<%d rect(s)>, acquireFenceFd=%d, releaseFenceFd=%d\n",
-                i, layer, comp_type_str(layer->compositionType), layer->hints, layer->flags, layer->handle,
+                        "    visibleRegionScreen=<%zu rect(s)>, acquireFenceFd=%d, releaseFenceFd=%d\n",
+                i, layer, comp_type_str(layer->compositionType), layer->hints, layer->flags, (uintptr_t)layer->handle,
                 layer->transform, blending_type_str(layer->blending),
                 layer->sourceCrop.left, layer->sourceCrop.top, layer->sourceCrop.right, layer->sourceCrop.bottom,
                 layer->displayFrame.left, layer->displayFrame.top, layer->displayFrame.right, layer->displayFrame.bottom,
@@ -109,11 +110,11 @@ dump_display_contents(hwc_display_contents_1_t *contents)
 void
 hwcv10_proc_invalidate(const struct hwc_procs* procs)
 {
-    fprintf(stderr, "%s: procs=%x\n", __func__, procs);
+    fprintf(stderr, "%s: procs=%" PRIxPTR "\n", __func__, (uintptr_t)procs);
 }
 
 void
-hwcv10_proc_vsync(const struct hwc_procs* procs, int disp, int64_t timestamp)
+hwcv10_proc_vsync(const struct hwc_procs* /*procs*/, int /*disp*/, int64_t /*timestamp*/)
 {
     //fprintf(stderr, "%s: procs=%x, disp=%d, timestamp=%.0f\n", __func__, procs, disp, (float)timestamp);
     vsync_mutex.lock();
@@ -124,7 +125,7 @@ hwcv10_proc_vsync(const struct hwc_procs* procs, int disp, int64_t timestamp)
 void
 hwcv10_proc_hotplug(const struct hwc_procs* procs, int disp, int connected)
 {
-    fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
+    fprintf(stderr, "%s: procs=%" PRIxPTR ", disp=%d, connected=%d\n", __func__, (uintptr_t)procs, disp, connected);
 }
 
 static hwc_procs_t global_procs = {
@@ -218,7 +219,7 @@ HwComposerBackend_v10::destroyWindow(EGLNativeWindowType window)
 }
 
 void
-HwComposerBackend_v10::swap(EGLNativeDisplayType display, EGLSurface surface)
+HwComposerBackend_v10::swap(EGLNativeDisplayType /*display*/, EGLSurface /*surface*/)
 {
     HWC_PLUGIN_ASSERT_ZERO(!(hwc_list->retireFenceFd == -1));
 
