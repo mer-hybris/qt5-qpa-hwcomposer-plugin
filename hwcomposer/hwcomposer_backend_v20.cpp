@@ -73,8 +73,8 @@ struct HwcProcs_v20 : public HWC2EventListener
     HwComposerBackend_v20 *backend;
 };
 
-void hwc2_callback_vsync(HWC2EventListener* listener, int32_t sequenceId,
-                         hwc2_display_t display, int64_t timestamp)
+void hwc2_callback_vsync(HWC2EventListener* listener, int32_t /*sequenceId*/,
+                         hwc2_display_t /*display*/, int64_t /*timestamp*/)
 {
     static int counter = 0;
     ++counter;
@@ -100,8 +100,8 @@ void hwc2_callback_hotplug(HWC2EventListener* listener, int32_t sequenceId,
         sequenceId, display, connected, primaryDisplay);
 }
 
-void hwc2_callback_refresh(HWC2EventListener* listener, int32_t sequenceId,
-                           hwc2_display_t display)
+void hwc2_callback_refresh(HWC2EventListener* /*listener*/, int32_t /*sequenceId*/,
+                           hwc2_display_t /*display*/)
 {
 }
 
@@ -434,9 +434,9 @@ bool HwComposerBackend_v20::requestUpdate(QEglFSWindow *window)
     return true;
 }
 
-void HwComposerBackend_v20::onHotplugReceived(int32_t sequenceId,
+void HwComposerBackend_v20::onHotplugReceived(int32_t /*sequenceId*/,
                                         hwc2_display_t display, bool connected,
-                                        bool primaryDisplay)
+                                        bool /*primaryDisplay*/)
 {
     hwc2_compat_device_on_hotplug(hwc2_device, display, connected);
 }
