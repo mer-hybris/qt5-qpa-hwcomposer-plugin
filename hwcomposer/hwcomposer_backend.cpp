@@ -73,10 +73,8 @@ HwComposerBackend::~HwComposerBackend()
 HwComposerBackend *
 HwComposerBackend::create()
 {
-#ifndef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
     hw_module_t *hwc_module = NULL;
     hw_device_t *hwc_device = NULL;
-#endif
     void *libminisf;
     void (*startMiniSurfaceFlinger)(void) = NULL;
 
@@ -105,86 +103,89 @@ HwComposerBackend::create()
         fprintf(stderr, "libminisf is incompatible or missing. Can not possibly start the SurfaceFlinger service. If you're experiencing troubles with media try updating droidmedia (and/or this plugin).");
     }
 
-#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
-    // Create hwcomposer backend directly without opening hardware module
-    // which is not needed and does not even exist on some hwc2 devices
-    return new HwComposerBackend_v20(NULL, libminisf);
-#else
     // Open hardware composer
-    HWC_PLUGIN_ASSERT_ZERO(hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)));
+    if (hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)) == 0) {
+        fprintf(stderr, "== hwcomposer module ==\n");
+        fprintf(stderr, " * Address: %p\n", hwc_module);
+        fprintf(stderr, " * Module API Version: %x\n", hwc_module->module_api_version);
+        fprintf(stderr, " * HAL API Version: %x\n", hwc_module->hal_api_version); /* should be zero */
+        fprintf(stderr, " * Identifier: %s\n", hwc_module->id);
+        fprintf(stderr, " * Name: %s\n", hwc_module->name);
+        fprintf(stderr, " * Author: %s\n", hwc_module->author);
+        fprintf(stderr, "== hwcomposer module ==\n");
 
-    fprintf(stderr, "== hwcomposer module ==\n");
-    fprintf(stderr, " * Address: %p\n", hwc_module);
-    fprintf(stderr, " * Module API Version: %x\n", hwc_module->module_api_version);
-    fprintf(stderr, " * HAL API Version: %x\n", hwc_module->hal_api_version); /* should be zero */
-    fprintf(stderr, " * Identifier: %s\n", hwc_module->id);
-    fprintf(stderr, " * Name: %s\n", hwc_module->name);
-    fprintf(stderr, " * Author: %s\n", hwc_module->author);
-    fprintf(stderr, "== hwcomposer module ==\n");
+        // Open hardware composer device
+        HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
 
-    // Open hardware composer device
-    HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
+        uint32_t version = interpreted_version(hwc_device);
 
-    uint32_t version = interpreted_version(hwc_device);
-
-    fprintf(stderr, "== hwcomposer device ==\n");
-    fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);
-    fprintf(stderr, " * Module: %p\n", hwc_device->module);
-    fprintf(stderr, "== hwcomposer device ==\n");
+        fprintf(stderr, "== hwcomposer device ==\n");
+        fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);
+        fprintf(stderr, " * Module: %p\n", hwc_device->module);
+        fprintf(stderr, "== hwcomposer device ==\n");
 
 #ifdef HWC_DEVICE_API_VERSION_0_1
-    // Special-case for old hw adaptations that have the version encoded in
-    // legacy format, we have to check hwc_device->version directly, because
-    // the constants are actually encoded in the old format
-    if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
-        (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
-        (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
-        return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
-    }
+        // Special-case for old hw adaptations that have the version encoded in
+        // legacy format, we have to check hwc_device->version directly, because
+        // the constants are actually encoded in the old format
+        if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
+            (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
+            (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
+            return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
+        }
 #endif
 
-    // Determine which backend we use based on the supported module API version
-    switch (version) {
+        // Determine which backend we use based on the supported module API version
+        switch (version) {
 #ifdef HWC_DEVICE_API_VERSION_0_1
-        case HWC_DEVICE_API_VERSION_0_1:
-        case HWC_DEVICE_API_VERSION_0_2:
-        case HWC_DEVICE_API_VERSION_0_3:
-            return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
-            break;
+            case HWC_DEVICE_API_VERSION_0_1:
+            case HWC_DEVICE_API_VERSION_0_2:
+            case HWC_DEVICE_API_VERSION_0_3:
+                return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
 #endif
 #ifdef HWC_DEVICE_API_VERSION_1_0
-        case HWC_DEVICE_API_VERSION_1_0:
-            return new HwComposerBackend_v10(hwc_module, hwc_device, libminisf);
-            break;
+            case HWC_DEVICE_API_VERSION_1_0:
+                return new HwComposerBackend_v10(hwc_module, hwc_device, libminisf);
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
-        case HWC_DEVICE_API_VERSION_1_1:
+            case HWC_DEVICE_API_VERSION_1_1:
 #ifdef HWC_DEVICE_API_VERSION_1_2
-        case HWC_DEVICE_API_VERSION_1_2:
+            case HWC_DEVICE_API_VERSION_1_2:
 #endif
 #ifdef HWC_DEVICE_API_VERSION_1_3
-        case HWC_DEVICE_API_VERSION_1_3:
+            case HWC_DEVICE_API_VERSION_1_3:
 #endif
 #ifdef HWC_DEVICE_API_VERSION_1_4
-        case HWC_DEVICE_API_VERSION_1_4:
+            case HWC_DEVICE_API_VERSION_1_4:
 #endif
 #ifdef HWC_DEVICE_API_VERSION_1_5
-        case HWC_DEVICE_API_VERSION_1_5:
+            case HWC_DEVICE_API_VERSION_1_5:
 #endif
-            // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
-            // underrun/overruns happen
-            return new HwComposerBackend_v11(hwc_module, hwc_device, libminisf, HWC_NUM_DISPLAY_TYPES);
-            break;
+                // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
+                // underrun/overruns happen
+                return new HwComposerBackend_v11(hwc_module, hwc_device, libminisf, HWC_NUM_DISPLAY_TYPES);
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
-        default:
-            fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
-                    hwc_module->module_api_version,
-                    hwc_device->version,
-                    version);
-            return NULL;
-            break;
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
+            case HWC_DEVICE_API_VERSION_2_0:
+                return new HwComposerBackend_v20(NULL, libminisf);
+#endif
+            default:
+                fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
+                        hwc_module->module_api_version,
+                        hwc_device->version,
+                        version);
+                return NULL;
+        }
+    }
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
+    else {
+        // Create hwc2 backend directly if opening hardware module fails
+        return new HwComposerBackend_v20(NULL, libminisf);
     }
 #endif
+
+    fprintf(stderr, "Unable to load hwcomposer module\n");
+    return NULL;
 }
 
 void
