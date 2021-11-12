@@ -64,28 +64,15 @@
 QT_BEGIN_NAMESPACE
 
 
-static void exit_qt_gracefully(int sig)
-{
-    qDebug("Exiting on signal: %d", sig);
-    QCoreApplication::exit(0);
-}
-
 HwComposerContext::HwComposerContext()
     : info(NULL)
     , backend(NULL)
     , display_off(false)
     , window_created(false)
     , fps(0)
+    , m_exitSignalHandler()
 {
-    // We need to catch the SIGTERM and SIGINT signals, so that we can do a
-    // proper shutdown of Qt and the plugin, and avoid crashes, hangs and
-    // reboots in cases where we don't properly close the hwcomposer.
-    struct sigaction new_action;
-    new_action.sa_handler = exit_qt_gracefully;
-    sigemptyset(&new_action.sa_mask);
-    new_action.sa_flags = 0;
-    sigaction(SIGTERM, &new_action, NULL);
-    sigaction(SIGINT, &new_action, NULL);
+    m_exitSignalHandler.start();
 
     // This actually opens the hwcomposer device
     backend = HwComposerBackend::create();

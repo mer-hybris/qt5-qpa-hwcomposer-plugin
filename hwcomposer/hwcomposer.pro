@@ -8,10 +8,12 @@ load(configure)
 INCLUDEPATH += .
 DEPENDPATH += .
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    exitsignalhandler.cpp
 
 SOURCES += hwcomposer_context.cpp
-HEADERS += hwcomposer_context.h
+HEADERS += hwcomposer_context.h \
+    exitsignalhandler.h
 
 SOURCES += hwcomposer_screeninfo.cpp
 HEADERS += hwcomposer_screeninfo.h

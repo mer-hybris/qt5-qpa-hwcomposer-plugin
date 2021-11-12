@@ -61,6 +61,8 @@
 #include <QtPlatformSupport/private/qeglplatformcontext_p.h>
 #endif
 
+#include "exitsignalhandler.h"
+
 QT_BEGIN_NAMESPACE
 
 class QEglFSContext;
@@ -97,6 +99,7 @@ private:
     bool display_off;
     bool window_created;
     qreal fps;
+    ExitSignalHandler m_exitSignalHandler;
 };
 
 QT_END_NAMESPACE
