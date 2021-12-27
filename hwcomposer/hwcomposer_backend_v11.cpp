@@ -297,7 +297,7 @@ public:
         layer->hints = 0;
         layer->flags = 0;
         layer->handle = 0;
-        layer->transform = (ww > hh) ? HWC_TRANSFORM_ROT_270 : 0; // FIXME: be more intelligent than "ww > hh"
+        layer->transform = 0;
         layer->blending = HWC_BLENDING_NONE;
     #ifdef HWC_DEVICE_API_VERSION_1_3
         layer->sourceCropf.top = 0.0f;
