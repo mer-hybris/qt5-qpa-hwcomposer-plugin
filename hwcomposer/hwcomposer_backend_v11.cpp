@@ -66,6 +66,8 @@ static qint64 setTime;
 #endif
 
 
+class HwComposerContent_v11;
+
 static int g_external_connected = 0;
 static int g_external_connected_next = 0;
 static int g_unblanked_displays[HWC_NUM_DISPLAY_TYPES] = { 0 };
@@ -73,6 +75,7 @@ static int g_unblanked_displays[HWC_NUM_DISPLAY_TYPES] = { 0 };
 struct HwcProcs_v11 : public hwc_procs
 {
     HwComposerBackend_v11 *backend;
+    HwComposerContent_v11 *content;
 };
 
 static void hwc11_callback_vsync(const struct hwc_procs *procs, int, int64_t)
@@ -91,13 +94,7 @@ static void hwc11_callback_invalidate(const struct hwc_procs *)
 {
 }
 
-static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int connected)
-{
-    fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
-    if (disp == HWC_DISPLAY_EXTERNAL) {
-        g_external_connected_next = connected;
-    }
-}
+static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int connected);
 
 class HwComposerBackendWindow_v11 : public HWComposerNativeWindow
 {
@@ -223,6 +220,8 @@ public:
         : hwc_device(hwc_device)
         , id(id)
         , hwc_list(nullptr)
+        , m_screen_width(0)
+        , m_screen_height(0)
     {
         size_t needed_size = sizeof(hwc_display_contents_1_t) +
             HWC_SCREEN_REQUIRED_LAYERS * sizeof(hwc_layer_1_t);
@@ -238,6 +237,10 @@ public:
 #endif
     }
 
+    void update_size() {
+        get_screen_size(hwc_device, id, &m_screen_width, &m_screen_height);
+    }
+
     bool relayout(int width, int height)
     {
         // Source rectangle of the desktop
@@ -245,12 +248,14 @@ public:
             0, 0, width, height
         };
 
-        int ww = width, hh = height;
-        get_screen_size(hwc_device, id, &ww, &hh);
+        // Don't call getDisplayAttributes too often here since it can cause big slowdowns.
+        if (m_screen_width <= 0 || m_screen_height <= 0) {
+            update_size();
+        }
 
         // Destination rectangle on the actual screen
         const hwc_rect_t dest_rect = {
-            0, 0, ww, hh
+            0, 0, m_screen_width, m_screen_height
         };
 
         hwc_layer_1_t *layer = NULL;
@@ -417,6 +422,8 @@ private: // members
     hwc_composer_device_1_t *hwc_device;
     int id;
     hwc_display_contents_1_t *hwc_list;
+    int m_screen_width;
+    int m_screen_height;
 };
 
 // collection of screens
@@ -440,6 +447,12 @@ public:
 
         for (auto &screen: screens) {
             delete screen;
+        }
+    }
+
+    void update_screen_sizes() {
+        for (auto &screen: screens) {
+            screen->update_size();
         }
     }
 
@@ -500,11 +513,21 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     procs->hotplug = hwc11_callback_hotplug;
     procs->vsync = hwc11_callback_vsync;
     procs->backend = this;
+    procs->content = content;
 
     hwc_device->registerProcs(hwc_device, procs);
 
     hwc_version = interpreted_version(hw_device);
     sleepDisplay(false);
+}
+
+static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int connected)
+{
+    fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
+    if (disp == HWC_DISPLAY_EXTERNAL) {
+        g_external_connected_next = connected;
+        ((struct HwcProcs_v11*)procs)->content->update_screen_sizes();
+    }
 }
 
 HwComposerBackend_v11::~HwComposerBackend_v11()
