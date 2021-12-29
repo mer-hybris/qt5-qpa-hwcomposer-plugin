@@ -288,7 +288,7 @@ public:
         // glitches and warnings in logcat. By setting the planarAlpha to non-
         // opaque, we attempt to force the HWC into using HWC_FRAMEBUFFER for this
         // layer so the HWC_FRAMEBUFFER_TARGET layer actually gets used.
-        bool tryToForceGLES = !qgetenv("QPA_HWC_FORCE_GLES").isEmpty();
+        static bool tryToForceGLES = qEnvironmentVariableIsSet("QPA_HWC_FORCE_GLES");
         layer->planeAlpha = tryToForceGLES ? 1 : 255;
     #endif
     #ifdef HWC_DEVICE_API_VERSION_1_5
