@@ -349,8 +349,9 @@ public:
         fblayer->handle = handle;
 
         if (g_unblanked_displays[id]) {
-            //fprintf(stderr, "%s: dup'ing acquire fence (%d) for display %d\n", __func__,
-                    //acquireFenceFd, id);
+#ifdef QPA_DEBUG_FENCES
+            qDebug() << __func__ << " dup'ing acquire fence (" << acquireFenceFd << ") for display" << id;
+#endif
             fblayer->acquireFenceFd = dup(acquireFenceFd);
         } else {
             fblayer->acquireFenceFd = -1;
@@ -379,8 +380,8 @@ public:
         } else {
             // additional fences need to be closed here
             if (fblayer->releaseFenceFd != -1) {
-#if 0
-                fprintf(stderr, "Merging release fences\n");
+#ifdef QPA_DEBUG_FENCES
+                qDebug() << "Merging release fences";
                 result = sync_merge("qpa-hwc-merged", result, fblayer->releaseFenceFd);
 #endif
                 //fprintf(stderr, "Closing release fence\n");

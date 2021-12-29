@@ -51,6 +51,8 @@
 
 #include <QBasicTimer>
 
+// #define QPA_DEBUG_FENCES
+
 // Helper class that takes care of waiting on and closing a set
 // of file descriptors
 class RetireFencePool {
@@ -63,7 +65,9 @@ public:
     ~RetireFencePool()
     {
         for (auto fd: m_fds) {
-            fprintf(stderr, "Waiting and closing retire fence fd: %d\n", fd);
+#ifdef QPA_DEBUG_FENCES
+            qDebug() << "Waiting and closing retire fence fd:" << fd;
+#endif
             if (m_waitOnRetireFence) sync_wait(fd, -1);
             close(fd);
         }
