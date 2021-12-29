@@ -451,19 +451,19 @@ public:
     {
         free(contents);
 
-        for (auto &screen: screens) {
+        for (auto screen: screens) {
             delete screen;
         }
     }
 
     void update_screen_sizes() {
-        for (auto &screen: screens) {
+        for (auto screen: screens) {
             screen->update_size();
         }
     }
 
     void prepare(buffer_handle_t handle, int acquireFenceFd, int width, int height, bool geometryChanged) {
-        for (auto &screen: screens) {
+        for (auto screen: screens) {
             if (screen->relayout(width, height)) {
                 geometryChanged = true;
             }
@@ -479,7 +479,7 @@ public:
     int release() {
         int result = -1;
 
-        for (auto &screen: screens) {
+        for (auto screen: screens) {
             result = screen->release(result);
         }
 
