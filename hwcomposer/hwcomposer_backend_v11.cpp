@@ -366,11 +366,7 @@ public:
         //trace_fds(__func__);
 
         // We assume the non-FB-target layer has its releaseFenceFd set to -1
-        // HWC_PLUGIN_EXPECT_ZERO(getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER)->releaseFenceFd != -1);
-        // Unfortunately that doesn't work on certain devices.
-        int f = getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER)->releaseFenceFd;
-        if (f != -1) close(f);
-        getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER)->releaseFenceFd = -1;
+        HWC_PLUGIN_EXPECT_ZERO(getLayer(HWC_SCREEN_FRAMEBUFFER_LAYER)->releaseFenceFd != -1);
 
         hwc_layer_1_t *fblayer = getLayer(HWC_SCREEN_FRAMEBUFFER_TARGET_LAYER);
 
