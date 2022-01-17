@@ -115,8 +115,9 @@ public:
 
     void screenPlugged();
 
+    int getSingleAttribute(uint32_t attribute, int dpy = 0);
+
 private:
-    int getSingleAttribute(uint32_t attribute);
     hwc_composer_device_1_t *hwc_device;
     hwc_display_contents_1_t *hwc_list;
     hwc_display_contents_1_t **hwc_mList;

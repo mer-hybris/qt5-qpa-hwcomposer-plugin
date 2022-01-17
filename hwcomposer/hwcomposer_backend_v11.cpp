@@ -145,32 +145,6 @@ private:
 };
 
 static void
-get_screen_size(hwc_composer_device_1_t *hwc_device, int id, int *width, int *height)
-{
-    size_t count = 1;
-    uint32_t config = 0;
-    if (hwc_device->getDisplayConfigs(hwc_device, id, &config, &count) == 0) {
-        uint32_t attrs[] = {
-            HWC_DISPLAY_WIDTH,
-            HWC_DISPLAY_HEIGHT,
-            HWC_DISPLAY_NO_ATTRIBUTE,
-        };
-        int32_t values[] = {
-            0,
-            0,
-            0,
-        };
-
-        hwc_device->getDisplayAttributes(hwc_device, id, config, attrs, values);
-        //fprintf(stderr, "Display %d size: %dx%d\n", id, values[0], values[1]);
-        *width = values[0];
-        *height = values[1];
-    } else {
-        //fprintf(stderr, "No size for display %d (not connected)\n", id);
-    }
-}
-
-static void
 dump_attributes(hwc_composer_device_1_t *hwc_device, int num_displays)
 {
     // Get display configs
@@ -237,8 +211,10 @@ public:
 #endif
     }
 
-    void update_size() {
-        get_screen_size(hwc_device, id, &m_screen_width, &m_screen_height);
+    void set_screen_size(int width, int height)
+    {
+        m_screen_width = width;
+        m_screen_height = height;
     }
 
     void relayout(int width, int height)
@@ -247,11 +223,6 @@ public:
         const hwc_rect_t source_rect = {
             0, 0, width, height
         };
-
-        // Don't call getDisplayAttributes too often here since it can cause big slowdowns.
-        if (m_screen_width <= 0 || m_screen_height <= 0) {
-            update_size();
-        }
 
         // Destination rectangle on the actual screen
         const hwc_rect_t dest_rect = {
@@ -333,6 +304,11 @@ public:
     hwc_display_contents_1_t *get()
     {
         return hwc_list;
+    }
+
+    int get_id()
+    {
+        return id;
     }
 
     void prepare(buffer_handle_t handle, int acquireFenceFd, bool geometryChanged)
@@ -454,9 +430,10 @@ public:
         }
     }
 
-    void update_screen_sizes() {
+    void update_screen_sizes(HwComposerBackend_v11 *backend)
+    {
         for (auto screen: screens) {
-            screen->update_size();
+            screen->set_screen_size(backend->getSingleAttribute(HWC_DISPLAY_WIDTH, screen->get_id()), backend->getSingleAttribute(HWC_DISPLAY_HEIGHT, screen->get_id()));
         }
     }
 
@@ -531,8 +508,8 @@ static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int 
     fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
     if (disp == HWC_DISPLAY_EXTERNAL) {
         g_external_connected_next = connected;
-        ((struct HwcProcs_v11*)procs)->content->update_screen_sizes();
         ((struct HwcProcs_v11*)procs)->backend->screenPlugged();
+        ((struct HwcProcs_v11*)procs)->content->update_screen_sizes(((struct HwcProcs_v11*)procs)->backend);
     }
 }
 
@@ -659,6 +636,9 @@ void HwComposerBackend_v11::blankDisplay(int display, bool blank)
         status = hwc_device->blank(hwc_device, display, blank);
     HWC_PLUGIN_EXPECT_ZERO(status);
     g_unblanked_displays[display] = (status == blank);
+
+    // on certian devices this is needed
+    screenPlugged();
 }
 
 void
@@ -715,7 +695,7 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
     }
 }
 
-int HwComposerBackend_v11::getSingleAttribute(uint32_t attribute)
+int HwComposerBackend_v11::getSingleAttribute(uint32_t attribute, int dpy)
 {
     uint32_t config;
 
@@ -730,16 +710,16 @@ int HwComposerBackend_v11::getSingleAttribute(uint32_t attribute)
     {
         /* 1.3 or lower, currently active config is the first config */
         size_t numConfigs = 1;
-        hwc_device->getDisplayConfigs(hwc_device, 0, &config, &numConfigs);
+        hwc_device->getDisplayConfigs(hwc_device, dpy, &config, &numConfigs);
     }
 #ifdef HWC_DEVICE_API_VERSION_1_4
     else {
         /* 1.4 or higher */
         if (!qgetenv("QPA_HWC_WORKAROUNDS").split(',').contains("no-active-config")) {
-            config = hwc_device->getActiveConfig(hwc_device, 0);
+            config = hwc_device->getActiveConfig(hwc_device, dpy);
         } else {
             size_t numConfigs = 1;
-            hwc_device->getDisplayConfigs(hwc_device, 0, &config, &numConfigs);
+            hwc_device->getDisplayConfigs(hwc_device, dpy, &config, &numConfigs);
         }
     }
 #endif
@@ -754,7 +734,7 @@ int HwComposerBackend_v11::getSingleAttribute(uint32_t attribute)
         0,
     };
 
-    hwc_device->getDisplayAttributes(hwc_device, 0, config, attributes, values);
+    hwc_device->getDisplayAttributes(hwc_device, dpy, config, attributes, values);
 
     for (unsigned int i = 0; i < sizeof(attributes) / sizeof(uint32_t); i++) {
         if (attributes[i] == attribute) {
