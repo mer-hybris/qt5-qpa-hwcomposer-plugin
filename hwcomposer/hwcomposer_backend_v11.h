@@ -113,6 +113,8 @@ public:
     // Present method that does the buffer swapping, returns the releaseFenceFd
     int present(RetireFencePool *pool, buffer_handle_t handle, int acquireFenceFd);
 
+    void screenPlugged();
+
 private:
     int getSingleAttribute(uint32_t attribute);
     hwc_composer_device_1_t *hwc_device;
@@ -120,6 +122,7 @@ private:
     hwc_display_contents_1_t **hwc_mList;
     uint32_t hwc_version;
     int num_displays;
+    bool m_screenAttachedGeometryChanged;
 
     bool m_displayOff;
     QBasicTimer m_deliverUpdateTimeout;

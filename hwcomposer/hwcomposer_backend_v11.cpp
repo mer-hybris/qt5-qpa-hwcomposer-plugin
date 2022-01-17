@@ -241,7 +241,7 @@ public:
         get_screen_size(hwc_device, id, &m_screen_width, &m_screen_height);
     }
 
-    bool relayout(int width, int height)
+    void relayout(int width, int height)
     {
         // Source rectangle of the desktop
         const hwc_rect_t source_rect = {
@@ -323,9 +323,6 @@ public:
     #ifdef HWC_DEVICE_API_VERSION_1_5
         layer->surfaceDamage.numRects = 0;
     #endif
-
-        // For now, we always return true (=geometry has changed)
-        return true;
     }
 
     ~HwComposerScreen_v11()
@@ -465,8 +462,8 @@ public:
 
     void prepare(buffer_handle_t handle, int acquireFenceFd, int width, int height, bool geometryChanged) {
         for (auto screen: screens) {
-            if (screen->relayout(width, height)) {
-                geometryChanged = true;
+            if (geometryChanged) {
+                screen->relayout(width, height);
             }
 
             screen->prepare(handle, acquireFenceFd, geometryChanged);
@@ -510,6 +507,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
     , hwc_list(NULL)
     , hwc_mList(NULL)
     , num_displays(num_displays)
+    , m_screenAttachedGeometryChanged(true)
     , m_displayOff(true)
     , width(0)
     , height(0)
@@ -534,6 +532,7 @@ static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int 
     if (disp == HWC_DISPLAY_EXTERNAL) {
         g_external_connected_next = connected;
         ((struct HwcProcs_v11*)procs)->content->update_screen_sizes();
+        ((struct HwcProcs_v11*)procs)->backend->screenPlugged();
     }
 }
 
@@ -617,9 +616,8 @@ HwComposerBackend_v11::swap(EGLNativeDisplayType display, EGLSurface surface)
 int
 HwComposerBackend_v11::present(RetireFencePool *pool, buffer_handle_t handle, int acquireFenceFd)
 {
-    // Always force geometry change for now, later on
-    // only do that on unblank/blank and attach/detach
-    bool geometryChanged = true;
+    bool geometryChanged = m_screenAttachedGeometryChanged;
+    m_screenAttachedGeometryChanged = false;
 
     content->prepare(handle, acquireFenceFd, width, height, geometryChanged);
 
@@ -858,6 +856,11 @@ bool HwComposerBackend_v11::requestUpdate(QEglFSWindow *window)
     m_vsyncTimeout.start(50, this);
     m_pendingUpdate.insert(window->window());
     return true;
+}
+
+void HwComposerBackend_v11::screenPlugged()
+{
+    m_screenAttachedGeometryChanged = true;
 }
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
