@@ -260,7 +260,7 @@ public:
         // opaque, we attempt to force the HWC into using HWC_FRAMEBUFFER for this
         // layer so the HWC_FRAMEBUFFER_TARGET layer actually gets used.
         static bool tryToForceGLES = qEnvironmentVariableIsSet("QPA_HWC_FORCE_GLES");
-        layer->planeAlpha = tryToForceGLES ? 1 : 255;
+        layer->planeAlpha = tryToForceGLES ? 254 : 255;
     #endif
     #ifdef HWC_DEVICE_API_VERSION_1_5
         layer->surfaceDamage.numRects = 0;
