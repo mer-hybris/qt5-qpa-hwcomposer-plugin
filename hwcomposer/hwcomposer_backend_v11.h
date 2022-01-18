@@ -119,7 +119,6 @@ public:
 
 private:
     hwc_composer_device_1_t *hwc_device;
-    hwc_display_contents_1_t *hwc_list;
     hwc_display_contents_1_t **hwc_mList;
     uint32_t hwc_version;
     int num_displays;

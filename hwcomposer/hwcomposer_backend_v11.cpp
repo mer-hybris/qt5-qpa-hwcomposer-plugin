@@ -481,7 +481,6 @@ private:
 HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_t *hw_device, void *libminisf, int num_displays)
     : HwComposerBackend(hwc_module, libminisf)
     , hwc_device((hwc_composer_device_1_t *)hw_device)
-    , hwc_list(NULL)
     , hwc_mList(NULL)
     , num_displays(num_displays)
     , m_screenAttachedGeometryChanged(true)
@@ -529,10 +528,6 @@ HwComposerBackend_v11::~HwComposerBackend_v11()
         free(hwc_mList);
     }
 
-    if (hwc_list != NULL) {
-        free(hwc_list);
-    }
-
     delete procs;
 }
 
@@ -547,7 +542,6 @@ HwComposerBackend_v11::createWindow(int width, int height)
 {
     // We expect that we haven't created a window already, if we had, we
     // would leak stuff, and we want to avoid that for obvious reasons.
-    HWC_PLUGIN_EXPECT_NULL(hwc_list);
     HWC_PLUGIN_EXPECT_NULL(hwc_mList);
 
 
@@ -683,10 +677,6 @@ HwComposerBackend_v11::sleepDisplay(bool sleep)
             blankDisplay(0, false);
         }
 
-
-        if (hwc_list) {
-            hwc_list->flags |= HWC_GEOMETRY_CHANGED;
-        }
 
         // If we have pending updates, make sure those start happening now..
         if (m_pendingUpdate.size()) {
