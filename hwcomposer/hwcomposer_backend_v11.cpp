@@ -508,9 +508,10 @@ static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int 
     fprintf(stderr, "%s: procs=%x, disp=%d, connected=%d\n", __func__, procs, disp, connected);
     if (disp == HWC_DISPLAY_EXTERNAL) {
         g_external_connected_next = connected;
-        ((struct HwcProcs_v11*)procs)->backend->screenPlugged();
-        ((struct HwcProcs_v11*)procs)->content->update_screen_sizes(((struct HwcProcs_v11*)procs)->backend);
     }
+
+    ((struct HwcProcs_v11*)procs)->backend->screenPlugged();
+    ((struct HwcProcs_v11*)procs)->content->update_screen_sizes(((struct HwcProcs_v11*)procs)->backend);
 }
 
 HwComposerBackend_v11::~HwComposerBackend_v11()
