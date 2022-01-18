@@ -500,6 +500,7 @@ HwComposerBackend_v11::HwComposerBackend_v11(hw_module_t *hwc_module, hw_device_
 
     hwc_version = interpreted_version(hw_device);
     sleepDisplay(false);
+    content->update_screen_sizes(this);
 }
 
 static void hwc11_callback_hotplug(const struct hwc_procs *procs, int disp, int connected)
