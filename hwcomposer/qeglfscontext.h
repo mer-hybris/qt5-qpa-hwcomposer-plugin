@@ -44,8 +44,10 @@
 
 #include <QtGlobal>
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
-
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtGui/private/qeglconvenience_p.h>
+#include <QtGui/private/qeglplatformcontext_p.h>
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
 #include <QtEglSupport/private/qeglconvenience_p.h>
 #include <QtEglSupport/private/qeglplatformcontext_p.h>
 #else
