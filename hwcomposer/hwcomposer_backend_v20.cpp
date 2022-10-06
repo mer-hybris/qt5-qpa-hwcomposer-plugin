@@ -71,6 +71,7 @@ static qint64 setTime;
 struct HwcProcs_v20 : public HWC2EventListener
 {
     HwComposerBackend_v20 *backend;
+    hwc2_display_t primaryDisplayId;
 };
 
 void hwc2_callback_vsync(HWC2EventListener* listener, int32_t /*sequenceId*/,
@@ -95,6 +96,10 @@ void hwc2_callback_hotplug(HWC2EventListener* listener, int32_t sequenceId,
            sequenceId, display,
            connected ? "connected" : "disconnected",
            primaryDisplay ? "primary" : "external");
+
+    if (primaryDisplay) {
+        static_cast<HwcProcs_v20 *>(listener)->primaryDisplayId = display;
+    }
 
     static_cast<const HwcProcs_v20 *>(listener)->backend->onHotplugReceived(
         sequenceId, display, connected, primaryDisplay);
@@ -223,6 +228,11 @@ HwComposerBackend_v20::HwComposerBackend_v20(hw_module_t *hwc_module, void *libm
     procs->on_hotplug_received = hwc2_callback_hotplug;
     procs->on_refresh_received = hwc2_callback_refresh;
     procs->backend = this;
+    // primaryDisplayId is not changed in this constructor
+    // but it may be changed by hwc2_callback_hotplug and thus the
+    // hwc2_compat_device_get_display_by_id loop will request the
+    // correct primary diplay once primaryDisplayId has been set.
+    procs->primaryDisplayId = 0;
 
     hwc2_device = hwc2_compat_device_new(false);
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc2_device);
@@ -233,7 +243,7 @@ HwComposerBackend_v20::HwComposerBackend_v20(hw_module_t *hwc_module, void *libm
     for (int i = 0; i < 5 * 1000; ++i) {
         // Wait at most 5s for hotplug events
         if ((hwc2_primary_display =
-            hwc2_compat_device_get_display_by_id(hwc2_device, 0)))
+            hwc2_compat_device_get_display_by_id(hwc2_device, procs->primaryDisplayId)))
             break;
         usleep(1000);
     }
