@@ -103,12 +103,14 @@ HwComposerBackend::create()
         fprintf(stderr, "libminisf is incompatible or missing. Can not possibly start the SurfaceFlinger service. If you're experiencing troubles with media try updating droidmedia (and/or this plugin).");
     }
 
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
     if (!qEnvironmentVariableIsEmpty("QT_QPA_FORCE_HWC2")) {
         // Create hwcomposer backend directly without opening hardware module
         // because on some devices loading hwc2 module twice breaks graphics
         // (The first load is in the composer android service.)
         return new HwComposerBackend_v20(NULL, libminisf);
     }
+#endif
 
     // Open hardware composer
     if (hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)) == 0) {
