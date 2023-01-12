@@ -49,6 +49,7 @@
 // libhybris access to the native hwcomposer window
 #include <hwcomposer_window.h>
 
+#include <QObject>
 #include <QBasicTimer>
 
 class HwcProcs_v11;
