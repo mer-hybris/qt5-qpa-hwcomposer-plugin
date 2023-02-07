@@ -42,9 +42,15 @@
 #include "qeglfsbackingstore.h"
 #include "qeglfswindow.h"
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtGui/QOpenGLContext>
+#include <QtOpenGL/QOpenGLPaintDevice>
+#include <QtOpenGL/QOpenGLShaderProgram>
+#else
 #include <QtGui/QOpenGLContext>
 #include <QtGui/QOpenGLPaintDevice>
 #include <QtGui/QOpenGLShaderProgram>
+#endif
 
 #include <QtGui/QScreen>
 
@@ -145,7 +151,11 @@ void QEglFSBackingStore::flush(QWindow *window, const QRegion &region, const QPo
         QRect imageRect = m_image.rect();
 
         QRegion fixed;
-        foreach (const QRect &rect, m_dirty.rects()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+        for (const QRect &rect : m_dirty) {
+#else
+        for (const QRect &rect : m_dirty.rects()) {
+#endif
             // intersect with image rect to be sure
             QRect r = imageRect & rect;
 
@@ -159,7 +169,11 @@ void QEglFSBackingStore::flush(QWindow *window, const QRegion &region, const QPo
             fixed |= r;
         }
 
-        foreach (const QRect &rect, fixed.rects()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+        for (const QRect &rect : fixed) {
+#else
+        for (const QRect &rect : fixed.rects()) {
+#endif
             // if the sub-rect is full-width we can pass the image data directly to
             // OpenGL instead of copying, since there's no gap between scanlines
             if (rect.width() == imageRect.width()) {

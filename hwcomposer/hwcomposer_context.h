@@ -55,7 +55,9 @@
 #include <QtGui/QImage>
 #include <EGL/egl.h>
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QtGui/private/qeglplatformcontext_p.h>
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 8, 0))
 #include <QtEglSupport/private/qeglplatformcontext_p.h>
 #else
 #include <QtPlatformSupport/private/qeglplatformcontext_p.h>

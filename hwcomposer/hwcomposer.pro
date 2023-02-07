@@ -30,10 +30,18 @@ HEADERS += hwcomposer_backend_v11.h
 
 HEADERS += qsystrace_selector.h
 
-versionAtLeast(QT_MINOR_VERSION, 8) {
-    QT += core-private gui-private egl_support-private waylandcompositor-private dbus fontdatabase_support-private eventdispatcher_support-private theme_support-private
-} else {
-    QT += core-private compositor-private gui-private platformsupport-private dbus
+QT += core-private gui-private dbus
+
+equals(QT_MAJOR_VERSION, 5) {
+    versionAtLeast(QT_MINOR_VERSION, 8) {
+        QT += egl_support-private waylandcompositor-private fontdatabase_support-private eventdispatcher_support-private theme_support-private
+    } else {
+        QT += compositor-private platformsupport-private
+    }
+}
+
+equals(QT_MAJOR_VERSION, 6) {
+    QT += waylandcompositor-private opengl
 }
 
 enable-sensors {

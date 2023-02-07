@@ -50,6 +50,7 @@
 
 #include <hybris/hwc2/hwc2_compatibility_layer.h>
 
+#include <QObject>
 #include <QBasicTimer>
 
 class HwcProcs_v20;
