@@ -45,12 +45,12 @@
 // Add dummy stub methods for QSysTrace
 namespace QSystrace
 {
-    inline void begin(const char *module, const char *tracepoint, const char *message, ...) {}
-    inline void end(const char *module, const char *tracepoint, const char *message, ...) {}
-    inline void counter(const char *module, const char *tracepoint, const char *message, ...) {}
+    inline void begin(const char */*module*/, const char */*tracepoint*/, const char */*message*/, ...) {}
+    inline void end(const char */*module*/, const char */*tracepoint*/, const char */*message*/, ...) {}
+    inline void counter(const char */*module*/, const char */*tracepoint*/, const char */*message*/, ...) {}
 };
 struct QSystraceEvent {
-    QSystraceEvent(const char *module, const char *tracepoint) {}
+    QSystraceEvent(const char */*module*/, const char */*tracepoint*/) {}
 };
 #endif
 
