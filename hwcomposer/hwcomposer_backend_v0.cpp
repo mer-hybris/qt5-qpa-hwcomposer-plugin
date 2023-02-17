@@ -38,7 +38,7 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-#include <android-version.h>
+#include <android-config.h>
 #if ANDROID_VERSION_MAJOR <= 4
 #include <hardware/hwcomposer_defs.h>
 #ifdef HWC_DEVICE_API_VERSION_0_1

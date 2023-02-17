@@ -42,12 +42,13 @@
 #ifndef HWCOMPOSER_BACKEND_H
 #define HWCOMPOSER_BACKEND_H
 
+#include <android-config.h>
+
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sync/sync.h>
 #include <stdint.h>
 
-#include <android-config.h>
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
 
