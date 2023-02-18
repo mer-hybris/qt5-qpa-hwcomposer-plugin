@@ -41,10 +41,6 @@ export QTDIR=/usr/share/qt5
 %install
 %qmake5_install
 
-# doesn't exist on Qt 5.1, we don't currently care about this for 5.2
-rm -f %{buildroot}/%{_libdir}/cmake/Qt5Gui/Qt5Gui_QEglFSIntegrationPlugin.cmake
-rm -f %{buildroot}/%{_libdir}/cmake/Qt5Gui/Qt5Gui_QEglFShwcIntegrationPlugin.cmake
-
 %files
 %defattr(-,root,root,-)
 %{_libdir}/qt5/plugins/platforms/libhwcomposer.so
