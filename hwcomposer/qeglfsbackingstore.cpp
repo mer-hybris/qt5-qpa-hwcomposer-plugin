@@ -39,6 +39,8 @@
 **
 ****************************************************************************/
 
+#include <GLES2/gl2.h>
+
 #include "qeglfsbackingstore.h"
 #include "qeglfswindow.h"
 
