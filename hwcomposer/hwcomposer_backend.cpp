@@ -70,11 +70,9 @@ HwComposerBackend::~HwComposerBackend()
     // XXX: Close/free hwc_module?
 }
 
-HwComposerBackend *
-HwComposerBackend::create()
+void *
+initLegacyHwComposerQuirks()
 {
-    hw_module_t *hwc_module = NULL;
-    hw_device_t *hwc_device = NULL;
     void *libminisf;
     void (*startMiniSurfaceFlinger)(void) = NULL;
 
@@ -102,13 +100,21 @@ HwComposerBackend::create()
     } else {
         fprintf(stderr, "libminisf is incompatible or missing. Can not possibly start the SurfaceFlinger service. If you're experiencing troubles with media try updating droidmedia (and/or this plugin).");
     }
+    return libminisf;
+}
+
+HwComposerBackend *
+HwComposerBackend::create()
+{
+    hw_module_t *hwc_module = NULL;
+    hw_device_t *hwc_device = NULL;
 
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
     if (!qEnvironmentVariableIsEmpty("QT_QPA_FORCE_HWC2")) {
         // Create hwcomposer backend directly without opening hardware module
         // because on some devices loading hwc2 module twice breaks graphics
         // (The first load is in the composer android service.)
-        return new HwComposerBackend_v20(NULL, libminisf);
+        return new HwComposerBackend_v20(NULL, NULL);
     }
 #endif
 
@@ -140,7 +146,7 @@ HwComposerBackend::create()
         if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
             (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
             (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
-            return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
+            return new HwComposerBackend_v0(hwc_module, hwc_device, initLegacyHwComposerQuirks());
         }
 #endif
 
@@ -150,11 +156,11 @@ HwComposerBackend::create()
             case HWC_DEVICE_API_VERSION_0_1:
             case HWC_DEVICE_API_VERSION_0_2:
             case HWC_DEVICE_API_VERSION_0_3:
-                return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
+                return new HwComposerBackend_v0(hwc_module, hwc_device, initLegacyHwComposerQuirks());
 #endif
 #ifdef HWC_DEVICE_API_VERSION_1_0
             case HWC_DEVICE_API_VERSION_1_0:
-                return new HwComposerBackend_v10(hwc_module, hwc_device, libminisf);
+                return new HwComposerBackend_v10(hwc_module, hwc_device, initLegacyHwComposerQuirks());
 #endif /* HWC_DEVICE_API_VERSION_1_0 */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER1_API
             case HWC_DEVICE_API_VERSION_1_1:
@@ -172,11 +178,11 @@ HwComposerBackend::create()
 #endif
                 // HWC_NUM_DISPLAY_TYPES is the actual size of the array, otherwise
                 // underrun/overruns happen
-                return new HwComposerBackend_v11(hwc_module, hwc_device, libminisf, HWC_NUM_DISPLAY_TYPES);
+                return new HwComposerBackend_v11(hwc_module, hwc_device, initLegacyHwComposerQuirks(), HWC_NUM_DISPLAY_TYPES);
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
             case HWC_DEVICE_API_VERSION_2_0:
-                return new HwComposerBackend_v20(NULL, libminisf);
+                return new HwComposerBackend_v20(NULL, NULL);
 #endif
             default:
                 fprintf(stderr, "Unknown hwcomposer API: 0x%x/0x%x/0x%x\n",
@@ -189,7 +195,7 @@ HwComposerBackend::create()
 #ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
     else {
         // Create hwc2 backend directly if opening hardware module fails
-        return new HwComposerBackend_v20(NULL, libminisf);
+        return new HwComposerBackend_v20(NULL, NULL);
     }
 #endif
 
