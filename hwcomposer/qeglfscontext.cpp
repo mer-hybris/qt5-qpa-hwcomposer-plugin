@@ -39,9 +39,7 @@
 **
 ****************************************************************************/
 
-#include "qeglfscontext.h"
-#include "qeglfswindow.h"
-#include "qeglfsintegration.h"
+#include <QtGlobal>
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtGui/private/qeglpbuffer_p.h>
@@ -53,6 +51,10 @@
 
 #include <QtGui/QSurface>
 #include <QtDebug>
+
+#include "qeglfscontext.h"
+#include "qeglfswindow.h"
+#include "qeglfsintegration.h"
 
 QT_BEGIN_NAMESPACE
 
