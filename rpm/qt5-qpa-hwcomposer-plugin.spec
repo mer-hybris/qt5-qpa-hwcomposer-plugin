@@ -31,7 +31,7 @@ This package contains a Qt 5 QPA plugin using libhybris' Droid
 hwcomposer for composing content onto the screen.
 
 %prep
-%autosetup -n %{name}-%{version}/hwcomposer
+%autosetup -n %{name}-%{version}
 
 %build
 export QTDIR=/usr/share/qt5
@@ -46,5 +46,5 @@ rm -f %{buildroot}/%{_libdir}/cmake/Qt5Gui/Qt5Gui_QEglFSIntegrationPlugin.cmake
 rm -f %{buildroot}/%{_libdir}/cmake/Qt5Gui/Qt5Gui_QEglFShwcIntegrationPlugin.cmake
 
 %files
-%defattr(-,root,root,-)
+%license LICENSE.LGPLv21 LGPL_EXCEPTION.txt LICENSE.GPLv3
 %{_libdir}/qt5/plugins/platforms/libhwcomposer.so
