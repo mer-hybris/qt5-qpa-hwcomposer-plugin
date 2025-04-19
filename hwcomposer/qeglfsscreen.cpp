@@ -67,6 +67,7 @@ QEglFSScreen::QEglFSScreen(HwComposerContext *hwc, EGLDisplay dpy)
 #ifdef QEGL_EXTRA_DEBUG
     qWarning("QEglScreen %p\n", this);
 #endif
+    setPowerState(PowerStateOn);
 }
 
 QEglFSScreen::~QEglFSScreen()
@@ -166,5 +167,16 @@ Qt::ScreenOrientation QEglFSScreen::orientation() const
     return m_screenOrientation;
 }
 #endif
+
+QPlatformScreen::PowerState QEglFSScreen::powerState() const
+{
+    return m_powerState;
+}
+
+void QEglFSScreen::setPowerState(QPlatformScreen::PowerState state)
+{
+    m_hwc->sleepDisplay(state != PowerStateOn);
+    m_powerState = state;
+}
 
 QT_END_NAMESPACE

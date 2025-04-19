@@ -218,10 +218,12 @@ void *QEglFSIntegration::nativeResourceForIntegration(const QByteArray &resource
     if (lowerCaseResource == "egldisplay") {
         return static_cast<QEglFSScreen *>(mScreen)->display();
     } else if (lowerCaseResource == "displayoff") {
-        // Called from lipstick to turn off the display (src/homeapplication.cpp)
+        // Called from old versions of lipstick to turn off the display
+        qWarning("\"DisplayOff\" resource is deprecated, use QPlatformScreen::setPowerState() instead");
         mHwc->sleepDisplay(true);
     } else if (lowerCaseResource == "displayon") {
-        // Called from lipstick to turn on the display (src/homeapplication.cpp)
+        // Called from old versions of lipstick to turn on the display
+        qWarning("\"DisplayOn\" resource is deprecated, use QPlatformScreen::setPowerState() instead");
         mHwc->sleepDisplay(false);
     }
 
