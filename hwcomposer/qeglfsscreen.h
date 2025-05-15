@@ -85,6 +85,9 @@ public:
     Qt::ScreenOrientation orientation() const;
 #endif
 
+    QPlatformScreen::PowerState powerState() const override;
+    void setPowerState(QPlatformScreen::PowerState state) override;
+
 #if 0
     QPlatformScreenPageFlipper *pageFlipper() const;
 #endif
@@ -93,6 +96,7 @@ private:
     HwComposerContext *m_hwc;
     QEglFSPageFlipper *m_pageFlipper;
     EGLDisplay m_dpy;
+    PowerState m_powerState;
 #ifdef WITH_SENSORS
     Qt::ScreenOrientation m_screenOrientation;
     QOrientationSensor *m_orientationSensor;
