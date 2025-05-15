@@ -52,8 +52,44 @@
 #include <QObject>
 #include <QBasicTimer>
 
+// #define QPA_DEBUG_FENCES
+
+// Helper class that takes care of waiting on and closing a set
+// of file descriptors
+class RetireFencePool {
+public:
+    RetireFencePool(bool waitOnRetireFence)
+        : m_fds(), m_waitOnRetireFence(waitOnRetireFence)
+    {
+    }
+
+    ~RetireFencePool()
+    {
+        for (auto fd: m_fds) {
+#ifdef QPA_DEBUG_FENCES
+            qDebug() << "Waiting and closing retire fence fd:" << fd;
+#endif
+            if (m_waitOnRetireFence) sync_wait(fd, -1);
+            close(fd);
+        }
+    }
+
+    void consume(int &fd)
+    {
+        if (fd != -1) {
+            m_fds.push_back(fd);
+            fd = -1;
+        }
+    }
+
+private:
+    std::vector<int> m_fds;
+    bool m_waitOnRetireFence;
+};
+
 class HwcProcs_v11;
 class QWindow;
+class HwComposerContent_v11;
 
 class HwComposerBackend_v11 : public QObject, public HwComposerBackend {
 public:
@@ -64,6 +100,7 @@ public:
     virtual EGLNativeWindowType createWindow(int width, int height);
     virtual void destroyWindow(EGLNativeWindowType window);
     virtual void swap(EGLNativeDisplayType display, EGLSurface surface);
+    virtual void blankDisplay(int display, bool blank);
     virtual void sleepDisplay(bool sleep);
     virtual float refreshRate();
     virtual bool getScreenSizes(int *width, int *height, float *physical_width, float *physical_height);
@@ -74,19 +111,29 @@ public:
     void handleVSyncEvent();
     bool event(QEvent *e) Q_DECL_OVERRIDE;
 
+    // Present method that does the buffer swapping, returns the releaseFenceFd
+    int present(RetireFencePool *pool, buffer_handle_t handle, int acquireFenceFd);
+
+    void screenPlugged();
+
+    int getSingleAttribute(uint32_t attribute, int dpy = 0);
+
 private:
-    int getSingleAttribute(uint32_t attribute);
     hwc_composer_device_1_t *hwc_device;
-    hwc_display_contents_1_t *hwc_list;
     hwc_display_contents_1_t **hwc_mList;
     uint32_t hwc_version;
     int num_displays;
+    bool m_screenAttachedGeometryChanged;
 
     bool m_displayOff;
     QBasicTimer m_deliverUpdateTimeout;
     QBasicTimer m_vsyncTimeout;
     QSet<QWindow *> m_pendingUpdate;
     HwcProcs_v11 *procs;
+
+    int width;
+    int height;
+    HwComposerContent_v11 *content;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
