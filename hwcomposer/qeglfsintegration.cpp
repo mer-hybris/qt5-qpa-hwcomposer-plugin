@@ -49,7 +49,11 @@
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QtGui/private/qgenericunixfontdatabase_p.h>
 #include <QtGui/private/qgenericunixeventdispatcher_p.h>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 11, 0))
+#include <QtGui/private/qgenericunixtheme_p.h>
+#else
 #include <QtGui/private/qgenericunixthemes_p.h>
+#endif
 #include <QtGui/private/qeglconvenience_p.h>
 #include <QtGui/private/qeglplatformcontext_p.h>
 #include <QtGui/private/qeglpbuffer_p.h>
