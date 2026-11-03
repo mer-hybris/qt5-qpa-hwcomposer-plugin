@@ -84,6 +84,8 @@ private:
     hwc2_compat_device_t* hwc2_device;
     hwc2_compat_display_t* hwc2_primary_display;
     hwc2_compat_layer_t* hwc2_primary_layer;
+    HWC2DisplayConfig m_activeConfig;
+    bool m_haveActiveConfig;
 
     bool m_displayOff;
     QBasicTimer m_deliverUpdateTimeout;
