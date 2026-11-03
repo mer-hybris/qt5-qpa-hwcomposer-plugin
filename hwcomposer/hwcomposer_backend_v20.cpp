@@ -259,6 +259,7 @@ HwComposerBackend_v20::HwComposerBackend_v20(hw_module_t *hwc_module, void *libm
     , hwc2_device(NULL)
     , hwc2_primary_display(NULL)
     , hwc2_primary_layer(NULL)
+    , m_haveActiveConfig(false)
     , m_displayOff(true)
 {
     procs = new HwcProcs_v20();
@@ -288,6 +289,15 @@ HwComposerBackend_v20::HwComposerBackend_v20(hw_module_t *hwc_module, void *libm
     HWC_PLUGIN_ASSERT_NOT_NULL(hwc2_primary_display);
 
     sleepDisplay(false);
+
+    // The returned config is malloc'ed by libhwc2_compat_layer; libhybris
+    // hooks bionic's malloc/free to glibc's, so plain free() releases it.
+    HWC2DisplayConfig *config = hwc2_compat_display_get_active_config(hwc2_primary_display);
+    if (config) {
+        m_activeConfig = *config;
+        m_haveActiveConfig = true;
+        free(config);
+    }
 }
 
 HwComposerBackend_v20::~HwComposerBackend_v20()
@@ -387,7 +397,10 @@ HwComposerBackend_v20::sleepDisplay(bool sleep)
 float
 HwComposerBackend_v20::refreshRate()
 {
-    float value = (float)hwc2_compat_display_get_active_config(hwc2_primary_display)->vsyncPeriod;
+    // should not happen
+    if (!m_haveActiveConfig) return 60.0;
+
+    float value = (float)m_activeConfig.vsyncPeriod;
 
     value = (1000000000.0 / value);
 
@@ -398,16 +411,14 @@ HwComposerBackend_v20::refreshRate()
 bool
 HwComposerBackend_v20::getScreenSizes(int *width, int *height, float *physical_width, float *physical_height)
 {
-    HWC2DisplayConfig *config = hwc2_compat_display_get_active_config(hwc2_primary_display);
-
     // should not happen
-    if (!config) return false;
+    if (!m_haveActiveConfig) return false;
 
-    int dpi_x = config->dpiX;
-    int dpi_y = config->dpiY;
+    int dpi_x = m_activeConfig.dpiX;
+    int dpi_y = m_activeConfig.dpiY;
 
-    *width = config->width;
-    *height = config->height;
+    *width = m_activeConfig.width;
+    *height = m_activeConfig.height;
 
     if (dpi_x == 0 || dpi_y == 0 || *width == 0 || *height == 0) {
         qWarning() << "failed to read screen size from hwc1.x backend";
