@@ -54,6 +54,7 @@
 #include <QBasicTimer>
 
 class HwcProcs_v20;
+class HwComposerScreenCapture;
 class QWindow;
 
 class HwComposerBackend_v20 : public QObject, public HwComposerBackend {
@@ -90,6 +91,7 @@ private:
     QBasicTimer m_vsyncTimeout;
     QSet<QWindow *> m_pendingUpdate;
     HwcProcs_v20 *procs;
+    HwComposerScreenCapture *m_screenCapture;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
