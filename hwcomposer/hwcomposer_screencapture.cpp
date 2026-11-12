@@ -82,15 +82,15 @@ enum { SessionChanged = 1, FrameRequested = 2 };
 
 static const int MaxSessionSize = 4096;
 
-// A session that keeps the compositor waiting longer than this is given up.
-static const int FenceTimeoutMs = 250;
-static const int64_t MaxSwapNs = 250000000;
+// A session is given up when the display buffer's fence or the encoder's swap keeps the
+// compositor waiting longer than this.
+static const int MaxWaitMs = 250;
 
 // Clip space, -1..+1 is the whole viewport
 static const GLfloat Positions[8] = { -1, -1,  1, -1,  -1, 1,  1, 1 };
 
 // Texture space (0..1) coordinates of the same corners for rotation 0, 90 and 270.
-// They all flip-y.
+// Row 0 of a display buffer is the top of the screen, t = 0 in GL is the bottom.
 static const GLfloat TexCoords[3][8] = {
     { 0, 1,  1, 1,  0, 0,  1, 0 },
     { 1, 1,  1, 0,  0, 1,  0, 0 },
@@ -188,7 +188,8 @@ public:
     ~ScopedCaptureContext()
     {
         if (!eglMakeCurrent(m_eglDisplay, m_savedDraw, m_savedRead, m_savedContext))
-            qWarning("screencap: cannot restore the compositor's EGL context (0x%x)", eglGetError());
+            qWarning("screencap: cannot restore the compositor's EGL context (0x%x)",
+                     eglGetError());
     }
 
     bool isCurrent() const { return m_current; }
@@ -199,11 +200,6 @@ private:
     EGLSurface m_savedRead;
     EGLContext m_savedContext;
     bool m_current;
-};
-
-struct ScopedFd {
-    ~ScopedFd() { if (fd >= 0) close(fd); }
-    int fd;
 };
 
 }
@@ -265,16 +261,13 @@ bool HwComposerScreenCapture::resolve(void *libminisf)
 {
     m_sessionQuery = reinterpret_cast<decltype(m_sessionQuery)>(
         android_dlsym(libminisf, "minisf_screen_capture_session_query"));
-    m_targetAcquireGeneration = reinterpret_cast<decltype(m_targetAcquireGeneration)>(
-        android_dlsym(libminisf, "minisf_screen_capture_target_acquire_generation"));
-    m_targetNativeWindow = reinterpret_cast<decltype(m_targetNativeWindow)>(
-        android_dlsym(libminisf, "minisf_screen_capture_target_native_window"));
-    m_targetRelease = reinterpret_cast<decltype(m_targetRelease)>(
-        android_dlsym(libminisf, "minisf_screen_capture_target_release"));
+    m_windowAcquire = reinterpret_cast<decltype(m_windowAcquire)>(
+        android_dlsym(libminisf, "minisf_screen_capture_window_acquire"));
+    m_windowRelease = reinterpret_cast<decltype(m_windowRelease)>(
+        android_dlsym(libminisf, "minisf_screen_capture_window_release"));
     m_setCallback = reinterpret_cast<decltype(m_setCallback)>(
         android_dlsym(libminisf, "minisf_screen_capture_set_callback"));
-    if (!m_sessionQuery || !m_targetAcquireGeneration || !m_targetNativeWindow ||
-        !m_targetRelease || !m_setCallback) {
+    if (!m_sessionQuery || !m_windowAcquire || !m_windowRelease || !m_setCallback) {
         qWarning("screencap: libminisf has no screen capture API, capture disabled");
         return false;
     }
@@ -289,7 +282,8 @@ bool HwComposerScreenCapture::resolve(void *libminisf)
         eglGetProcAddress("glEGLImageTargetTexture2DOES"));
     m_eglPresentationTimeANDROID = reinterpret_cast<PFNEGLPRESENTATIONTIMEANDROIDPROC>(
         eglGetProcAddress("eglPresentationTimeANDROID"));
-    if (!m_eglCreateImageKHR || !m_eglDestroyImageKHR || !m_glEGLImageTargetTexture2DOES || !m_eglPresentationTimeANDROID) {
+    if (!m_eglCreateImageKHR || !m_eglDestroyImageKHR || !m_glEGLImageTargetTexture2DOES ||
+        !m_eglPresentationTimeANDROID) {
         qWarning("screencap: EGLImage or presentation time extensions are missing, "
                  "capture disabled");
         return false;
@@ -299,7 +293,8 @@ bool HwComposerScreenCapture::resolve(void *libminisf)
 }
 
 // On a Binder thread. The repaint's frame attaches to a new session, detaches from
-// an ended one, or is the frame a recorder asked for.
+// an ended one, or is the frame a recorder asked for. A frame request is checked against
+// the session first: one for a session another renderer fills must not repaint lipstick.
 void HwComposerScreenCapture::sessionCallback(void *user, int event)
 {
     HwComposerScreenCapture *capture = static_cast<HwComposerScreenCapture *>(user);
@@ -355,10 +350,7 @@ void HwComposerScreenCapture::bufferPresented(HWComposerNativeWindowBuffer *buff
 void HwComposerScreenCapture::captureFrame()
 {
     HWComposerNativeWindowBuffer *buffer = m_buffer;
-    ScopedFd fence = { m_fenceFd };
     m_buffer = nullptr;
-    m_fenceFd = -1;
-
     if (!buffer)
         return;
 
@@ -366,8 +358,8 @@ void HwComposerScreenCapture::captureFrame()
     if (!m_target)
         return;
 
-    if (fence.fd >= 0 && sync_wait(fence.fd, FenceTimeoutMs) != 0) {
-        qWarning("screencap: the display buffer was not ready in %d ms", FenceTimeoutMs);
+    if (m_fenceFd >= 0 && sync_wait(m_fenceFd, MaxWaitMs) != 0) {
+        qWarning("screencap: the display buffer was not ready in %d ms", MaxWaitMs);
         fail();
         return;
     }
@@ -403,7 +395,7 @@ void HwComposerScreenCapture::checkSession()
         return;
     }
 
-    if (!validSessionSize(info.width) || !validSessionSize(info.height) || info.fps <= 0) {
+    if (!validSessionSize(info.width) || !validSessionSize(info.height)) {
         qWarning("screencap: rejecting session %" PRIu64 " of %dx%d@%d: sizes must be even "
                  "and at most %d", info.generation, info.width, info.height, info.fps,
                  MaxSessionSize);
@@ -421,7 +413,7 @@ void HwComposerScreenCapture::attach(const MinisfScreenCaptureSessionInfo &info,
                                      const CaptureFit &fit)
 {
     // Null if another recorder took over since the query; the next frame sees it.
-    m_target = m_targetAcquireGeneration(info.generation);
+    m_target = m_windowAcquire(info.generation);
     if (!m_target)
         return;
     m_generation = info.generation;
@@ -456,7 +448,7 @@ void HwComposerScreenCapture::attach(const MinisfScreenCaptureSessionInfo &info,
     }
 
     m_encoderSurface = eglCreateWindowSurface(m_eglDisplay, config,
-        reinterpret_cast<EGLNativeWindowType>(m_targetNativeWindow(m_target)), nullptr);
+        reinterpret_cast<EGLNativeWindowType>(m_target), nullptr);
     if (m_encoderSurface == EGL_NO_SURFACE) {
         qWarning("screencap: eglCreateWindowSurface failed (0x%x)", eglGetError());
         fail();
@@ -477,12 +469,11 @@ void HwComposerScreenCapture::attach(const MinisfScreenCaptureSessionInfo &info,
         return;
     }
 
-    m_width = info.width;
     m_height = info.height;
     m_fit = fit;
     const QRect &vp = m_fit.viewport;
     qDebug("screencap: attached to session %" PRIu64 ": %dx%d@%d, rotation %d, "
-           "viewport %d,%d %dx%d", m_generation, m_width, m_height, info.fps,
+           "viewport %d,%d %dx%d", m_generation, info.width, info.height, info.fps,
            m_fit.rotation, vp.x(), vp.y(), vp.width(), vp.height());
 }
 
@@ -496,7 +487,7 @@ void HwComposerScreenCapture::detach()
     if (m_encoderSurface != EGL_NO_SURFACE)
         eglDestroySurface(m_eglDisplay, m_encoderSurface);
     if (m_target)
-        m_targetRelease(m_target);
+        m_windowRelease(m_target);
 
     m_sources.clear();
     m_program = 0;
@@ -527,20 +518,19 @@ bool HwComposerScreenCapture::submit(HWComposerNativeWindowBuffer *buffer)
 
     // The recorder's timestamps, including its end of recording, use
     // CLOCK_MONOTONIC as well.
-    if (!m_eglPresentationTimeANDROID(m_eglDisplay, m_encoderSurface, monotonicNs())) {
+    const int64_t start = monotonicNs();
+    if (!m_eglPresentationTimeANDROID(m_eglDisplay, m_encoderSurface, start)) {
         qWarning("screencap: eglPresentationTimeANDROID failed (0x%x)", eglGetError());
         return false;
     }
 
-    const int64_t start = monotonicNs();
     if (!eglSwapBuffers(m_eglDisplay, m_encoderSurface)) {
         qWarning("screencap: eglSwapBuffers failed (0x%x)", eglGetError());
         return false;
     }
-    const int64_t swapNs = monotonicNs() - start;
-    if (swapNs > MaxSwapNs) {
-        qWarning("screencap: the encoder blocked a swap for %" PRId64 " ms",
-                 swapNs / 1000000);
+    const int64_t swapMs = (monotonicNs() - start) / 1000000;
+    if (swapMs > MaxWaitMs) {
+        qWarning("screencap: the encoder blocked a swap for %" PRId64 " ms", swapMs);
         return false;
     }
 

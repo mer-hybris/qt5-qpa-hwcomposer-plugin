@@ -121,9 +121,8 @@ private:
 
     // libminisf
     int (*m_sessionQuery)(MinisfScreenCaptureSessionInfo *info) = nullptr;
-    void *(*m_targetAcquireGeneration)(uint64_t generation) = nullptr;
-    void *(*m_targetNativeWindow)(void *target) = nullptr;
-    void (*m_targetRelease)(void *target) = nullptr;
+    void *(*m_windowAcquire)(uint64_t generation) = nullptr;
+    void (*m_windowRelease)(void *window) = nullptr;
     void (*m_setCallback)(void (*callback)(void *user, int event), void *user) = nullptr;
 
     // EGL and GL extensions
@@ -136,7 +135,8 @@ private:
     const int m_displayHeight;
     const int m_landscapeRotation;
 
-    // Last buffer handed to the display, and a copy of its acquire fence.
+    // Last buffer handed to the display and a copy of its acquire fence, valid from
+    // bufferPresented() to the next one; captureFrame() consumes the buffer.
     HWComposerNativeWindowBuffer *m_buffer = nullptr;
     int m_fenceFd = -1;
 
@@ -146,7 +146,6 @@ private:
     // The session this object is attached to.
     void *m_target = nullptr;
     uint64_t m_generation = 0;
-    int m_width = 0;
     int m_height = 0;
     CaptureFit m_fit = {};
 

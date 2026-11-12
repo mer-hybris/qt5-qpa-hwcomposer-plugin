@@ -91,7 +91,7 @@ private:
     QBasicTimer m_vsyncTimeout;
     QSet<QWindow *> m_pendingUpdate;
     HwcProcs_v20 *procs;
-    HwComposerScreenCapture *m_screenCapture;
+    HwComposerScreenCapture *m_screenCapture = nullptr;
 };
 
 #endif /* HWC_PLUGIN_HAVE_HWCOMPOSER1_API */
