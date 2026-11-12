@@ -41,6 +41,7 @@
 
 #include <android-version.h>
 #include "hwcomposer_backend_v20.h"
+#include "hwcomposer_screencapture.h"
 #include "qeglfswindow.h"
 
 #include <string>
@@ -120,6 +121,7 @@ class HWC2Window : public HWComposerNativeWindow
         HWComposerNativeWindowBuffer *m_lastBuffer = nullptr;
         std::vector<HWComposerNativeWindowBuffer*> m_slotCache;
         int m_nextSlot = 0;
+        HwComposerScreenCapture *m_screenCapture = nullptr;
     protected:
         void present(HWComposerNativeWindowBuffer *buffer);
 
@@ -129,6 +131,7 @@ class HWC2Window : public HWComposerNativeWindow
                 hwc2_compat_display_t *display, hwc2_compat_layer_t *layer);
         ~HWC2Window();
         void set();
+        void setScreenCapture(HwComposerScreenCapture *capture) { m_screenCapture = capture; }
 };
 
 HWC2Window::HWC2Window(unsigned int width, unsigned int height,
@@ -220,6 +223,10 @@ void HWC2Window::present(HWComposerNativeWindowBuffer *buffer)
         m_nextSlot = (m_nextSlot + 1) % m_slotCache.size();
     }
 
+    // Before set_client_target(), which takes the acquire fence.
+    if (m_screenCapture)
+        m_screenCapture->bufferPresented(buffer, acquireFenceFd);
+
     hwc2_compat_display_set_client_target(hwcDisplay, slot, target,
                                           acquireFenceFd,
                                           HAL_DATASPACE_UNKNOWN);
@@ -305,6 +312,7 @@ HwComposerBackend_v20::~HwComposerBackend_v20()
     }
 
     delete procs;
+    delete m_screenCapture;
 }
 
 EGLNativeDisplayType
@@ -333,6 +341,10 @@ HwComposerBackend_v20::createWindow(int width, int height)
                                          HAL_PIXEL_FORMAT_RGBA_8888,
                                          hwc2_primary_display, layer);
 
+    if (!m_screenCapture)
+        m_screenCapture = HwComposerScreenCapture::create(width, height);
+    hwc_win->setScreenCapture(m_screenCapture);
+
     return (EGLNativeWindowType) static_cast<ANativeWindow *>(hwc_win);
 }
 
@@ -350,6 +362,10 @@ HwComposerBackend_v20::swap(EGLNativeDisplayType display, EGLSurface surface)
 #endif
 
     eglSwapBuffers(display, surface);
+
+    // present() runs inside eglSwapBuffers(), where EGL must not be re-entered.
+    if (m_screenCapture)
+        m_screenCapture->captureFrame();
 
 #ifdef QPA_HWC_TIMING
     qDebug("HWComposerBackend::swap(), present=%.3f, sync=%.3f, prepare=%.3f, set=%.3f, total=%.3f",
